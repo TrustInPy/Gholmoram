@@ -1,10 +1,10 @@
 from bot import *
+from telethon.sync import events
 
 @client.on(events.NewMessage(func=lambda e: e.is_group, pattern="(?i)/team"))
 async def team(event):
     if event.chat_id in HOME:
         message_chat_id = event.chat_id
-
         try:
             team = (
                 "🔰 Bunch of friends gathered together "

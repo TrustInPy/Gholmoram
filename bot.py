@@ -1,9 +1,7 @@
 import os
 import json
 from dotenv import load_dotenv
-from telethon import TelegramClient, events, client
-
-
+from telethon.sync import TelegramClient
 
 load_dotenv()
 API_ID = os.getenv("API_ID")
@@ -13,3 +11,4 @@ ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
 HOME = json.loads(os.getenv("HOME"))
 
 client = TelegramClient('name', API_ID, API_HASH)
+client.parse_mode = 'md'

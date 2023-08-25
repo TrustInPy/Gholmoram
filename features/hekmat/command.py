@@ -2,6 +2,7 @@ import re
 import random
 import requests
 from bot import *
+from telethon.sync import events
 
 @client.on(events.NewMessage(func=lambda e: e.is_group, pattern='(?i)/hekmat'))
 async def hekmat(event):
@@ -37,7 +38,6 @@ async def hekmat(event):
 
 @client.on(events.NewMessage(func=lambda e: e.is_private, pattern='(?i)/hekmat'))
 async def hekmat(event):
-    # if event.chat_id in HOME:
         message_chat_id = event.chat_id
 
         try:
@@ -63,5 +63,3 @@ async def hekmat(event):
 
         except Exception as e:
             print("Hafez" + str(e))
-    # else:
-    #     pass

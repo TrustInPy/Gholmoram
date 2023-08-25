@@ -1,6 +1,6 @@
 import requests
 from bot import *
-
+from telethon.sync import events
 
 @client.on(events.NewMessage(func=lambda e: e.is_group, pattern='(?i)/hafez'))
 async def hafez(event):
@@ -25,7 +25,6 @@ async def hafez(event):
 
 @client.on(events.NewMessage(func=lambda e: e.is_private, pattern='(?i)/hafez'))
 async def hafez(event):
-    # if event.chat_id in HOME:
     message_chat_id = event.chat_id
     
     try:
@@ -40,5 +39,3 @@ async def hafez(event):
         await client.send_message(message_chat_id, poem)
     except Exception as e:
         print("Hafez" + str(e))
-    # else:
-    #     pass

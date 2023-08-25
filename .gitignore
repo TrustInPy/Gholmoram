@@ -1,0 +1,8 @@
+*.jpg
+.env
+.venv
+*.session
+*.session-journal
+.vscode
+__pycache__
+*.db

@@ -1,7 +1,7 @@
 import re
 import random
 import requests
-from bot import *
+from bot import client
 from telethon.sync import events
 
 

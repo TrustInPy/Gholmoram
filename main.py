@@ -1,5 +1,5 @@
 import features
-from bot import *
+from bot import client
 from task import starter
 
 client.start()

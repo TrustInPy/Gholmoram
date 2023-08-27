@@ -1,4 +1,4 @@
-from bot import *
+from bot import client, ADMIN_ID
 from telethon.sync import events
 
 
@@ -11,7 +11,15 @@ async def members(event):
             text = ""
             async for user in client.iter_participants(message_chat_id):
                 str_user_id = str(user.id)
-                text = text + f"[@{user.username}](tg://user?id={str_user_id}) " + str_user_id + "\n"
+                user_hash = str(user.access_hash)
+                text = (
+                    text
+                    + f"[@{user.username}](tg://user?id={str_user_id}) "
+                    + str_user_id
+                    + "\n"
+                    + user_hash
+                    + "\n\n"
+                )
             await client.send_message(message_chat_id, text)
             print(text)
         except Exception as e:

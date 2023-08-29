@@ -3,7 +3,7 @@ from telethon.sync import events
 
 
 @client.on(events.NewMessage(func=lambda e: e.is_group, pattern="(?i)/members"))
-async def members(event):
+async def handler(event):
     message_chat_id = event.chat_id
     user = event.message.sender_id
     if user == ADMIN_ID:

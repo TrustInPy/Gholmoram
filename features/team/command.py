@@ -1,7 +1,7 @@
 from bot import client
 from telethon.sync import events
 from telethon import functions, types
-
+from features.start.buttons import keyboard
 
 teammates = [
     {
@@ -37,11 +37,7 @@ teammates = [
 ]
 
 
-@client.on(
-    events.NewMessage(func=lambda e: e.is_group or e.is_private, pattern="(?i)/team")
-)
-async def team(event):
-    message_chat_id = event.chat_id
+async def team(teammates):
     try:
         users = None
         try:
@@ -71,7 +67,7 @@ async def team(event):
             )
         except Exception as e:
             pass
-        if users:
+        if users and len(users) == len(teammates):
             team_members = "🔅 Bunch of friends gathered together as a team:\n\n"
             for i in range(len(users)):
                 user = users[i]
@@ -87,6 +83,40 @@ async def team(event):
             for i in range(len(teammates)):
                 team_members = team_members + f"🔸 {teammates[i]['name']}\n"
 
-        await client.send_message(message_chat_id, team_members, link_preview=False)
+        return team_members
+        # await client.send_message(message_chat_id, team_members, link_preview=False)
     except Exception as e:
-        print("Team " + str(e))
+        print("*** Can not get Team ...")
+        return "‼️ متاسفانه تیم ما دریافت نشد !\n  دوباره تلاش کنید"
+
+
+@client.on(
+    events.NewMessage(func=lambda e: e.is_group or e.is_private, pattern="(?i)/team")
+)
+async def handler(event):
+    message_chat_id = event.chat_id
+    text = await team(teammates)
+    try:
+        await client.delete_messages(message_chat_id, event._message_id)
+        if not event.is_private:
+            first_name = event.message.sender.first_name
+            mention = f"[@{first_name}](tg://user?id={event.message.sender_id})"
+            text = mention + "\n" + text
+    except:
+        pass
+    await client.send_message(message_chat_id, text, link_preview=False)
+
+
+@client.on(events.CallbackQuery(pattern="Team"))
+async def callback(event):
+    message_chat_id = event.chat_id
+    text = await team(teammates)
+    if not event.is_private:
+        first_name = event.sender.first_name
+        mention = f"[@{first_name}](tg://user?id={event.sender_id})"
+        text = mention + "\n" + text
+    await event.answer("تیم ما")
+    await client.edit_message(message_chat_id, event._message_id, buttons=None)
+    await client.send_message(
+        message_chat_id, text, buttons=keyboard, link_preview=False
+    )

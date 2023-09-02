@@ -1,4 +1,5 @@
 import features
+import event
 from bot import client
 from task import starter
 

@@ -9,6 +9,7 @@ API_HASH = os.getenv("API_HASH")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
 HOME = json.loads(os.getenv("HOME"))
+DATABASE_NAME = os.getenv("DATABASE_NAME")
 
 client = TelegramClient("Gholmoram", API_ID, API_HASH)
 client.parse_mode = "md"

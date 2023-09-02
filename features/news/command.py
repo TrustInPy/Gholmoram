@@ -39,10 +39,10 @@ async def callback(event):
             + "\n🌐 [Farsnews](https://www.farsnews.ir)"
         )
         await event.answer("اخبار برتر روز")
-        await client.edit_message(message_chat_id, event._message_id, buttons=None)
         await client.send_message(
             message_chat_id, khabar, buttons=news_keyboard, link_preview=False
         )
+        await client.edit_message(message_chat_id, event._message_id, buttons=None)
 
     except Exception as e:
         print("khabar " + str(e))
@@ -73,10 +73,10 @@ async def callback(event):
             + "\n🌐 [Farsnews](https://www.farsnews.ir)"
         )
         await event.answer("اخبار سیاسی")
-        await client.edit_message(message_chat_id, event._message_id, buttons=None)
         await client.send_message(
             message_chat_id, khabar, buttons=news_keyboard, link_preview=False
         )
+        await client.edit_message(message_chat_id, event._message_id, buttons=None)
 
     except Exception as e:
         print("khabar " + str(e))
@@ -107,10 +107,10 @@ async def callback(event):
             + "\n🌐 [Farsnews](https://www.farsnews.ir)"
         )
         await event.answer("اخبار ورزشی")
-        await client.edit_message(message_chat_id, event._message_id, buttons=None)
         await client.send_message(
             message_chat_id, khabar, buttons=news_keyboard, link_preview=False
         )
+        await client.edit_message(message_chat_id, event._message_id, buttons=None)
 
     except Exception as e:
         print("khabar " + str(e))
@@ -141,10 +141,10 @@ async def callback(event):
             + "\n🌐 [Farsnews](https://www.farsnews.ir)"
         )
         await event.answer("اخبار اقتصادی")
-        await client.edit_message(message_chat_id, event._message_id, buttons=None)
         await client.send_message(
             message_chat_id, khabar, buttons=news_keyboard, link_preview=False
         )
+        await client.edit_message(message_chat_id, event._message_id, buttons=None)
 
     except Exception as e:
         print("khabar " + str(e))
@@ -175,10 +175,10 @@ async def callback(event):
             + "\n🌐 [Farsnews](https://www.farsnews.ir)"
         )
         await event.answer("اخبار فرهنگی و هنری")
-        await client.edit_message(message_chat_id, event._message_id, buttons=None)
         await client.send_message(
             message_chat_id, khabar, buttons=news_keyboard, link_preview=False
         )
+        await client.edit_message(message_chat_id, event._message_id, buttons=None)
 
     except Exception as e:
         print("khabar " + str(e))

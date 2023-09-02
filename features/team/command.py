@@ -104,7 +104,7 @@ async def handler(event):
             text = mention + "\n" + text
     except:
         pass
-    await client.send_message(message_chat_id, text, link_preview=False)
+    await client.send_message(message_chat_id, text, link_preview=False, buttons=keyboard)
 
 
 @client.on(events.CallbackQuery(pattern="Team"))
@@ -116,7 +116,7 @@ async def callback(event):
         mention = f"[@{first_name}](tg://user?id={event.sender_id})"
         text = mention + "\n" + text
     await event.answer("تیم ما")
-    await client.edit_message(message_chat_id, event._message_id, buttons=None)
     await client.send_message(
         message_chat_id, text, buttons=keyboard, link_preview=False
     )
+    await client.edit_message(message_chat_id, event._message_id, buttons=None)

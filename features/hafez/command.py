@@ -36,7 +36,7 @@ async def handler(event):
             text = mention + "\n" + text
     except:
         pass
-    await client.send_message(message_chat_id, text)
+    await client.send_message(message_chat_id, text, buttons=keyboard)
 
 
 @client.on(events.CallbackQuery(pattern="Hafez"))
@@ -48,5 +48,5 @@ async def callback(event):
         mention = f"[@{first_name}](tg://user?id={event.sender_id})"
         text = mention + "\n" + text
     await event.answer("یک بیت از حافظ")
-    await client.edit_message(message_chat_id, event._message_id, buttons=None)
     await client.send_message(message_chat_id, text, buttons=keyboard)
+    await client.edit_message(message_chat_id, event._message_id, buttons=None)

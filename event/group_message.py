@@ -27,13 +27,13 @@ async def handler(event):
         await update_cache(user_data)
     else:
         # If the user already exists, update other user data fields
-        # full = await client(GetFullUserRequest(user_id))
+        full = await client(GetFullUserRequest(user_id))
         existing_user_data = USER_DATA_CACHE[user_id]
         existing_user_data["username"] = user.username
         existing_user_data["first_name"] = user.first_name
         existing_user_data["last_name"] = user.last_name
         existing_user_data["access_hash"] = user.access_hash
-        # existing_user_data["bio"] = full.full_user.about
+        existing_user_data["bio"] = full.full_user.about
         existing_user_data["is_bot"] = user.bot
 
     print("Done")

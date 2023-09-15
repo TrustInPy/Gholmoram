@@ -1,6 +1,7 @@
 import aiosqlite
 import asyncio
 from bot import DATABASE_NAME
+from data.chats_data import load_chat_data
 
 USER_DATA_CACHE = {}  # Dictionary to store user data
 
@@ -178,6 +179,7 @@ async def run_database():
     await create_chats_table(conn)
     await create_messages_table(conn)
     await load_user_data(conn)
+    await load_chat_data(conn)
     await conn.close()
 
 

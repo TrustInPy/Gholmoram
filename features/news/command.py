@@ -20,7 +20,7 @@ async def callback(event):
     max_length = 30
     try:
         url = "https://www.farsnews.ir/rss/topnews"
-        response = requests.get(url, proxies)
+        response = requests.get(url, proxies=proxies)
         xml_data = response.content.decode("utf-8")
         item_tags = xml_data.split("<item>")[1:]
         khabar = ""
@@ -54,7 +54,7 @@ async def callback(event):
     max_length = 30
     try:
         url = "https://www.farsnews.ir/rss/politics/topnews"
-        response = requests.get(url, proxies)
+        response = requests.get(url, proxies=proxies)
         xml_data = response.content.decode("utf-8")
         item_tags = xml_data.split("<item>")[1:]
         khabar = ""
@@ -88,7 +88,7 @@ async def callback(event):
     max_length = 30
     try:
         url = "https://www.farsnews.ir/rss/sports/topnews"
-        response = requests.get(url, proxies)
+        response = requests.get(url, proxies=proxies)
         xml_data = response.content.decode("utf-8")
         item_tags = xml_data.split("<item>")[1:]
         khabar = ""
@@ -122,7 +122,7 @@ async def callback(event):
     max_length = 30
     try:
         url = "https://www.farsnews.ir/rss/economy/topnews"
-        response = requests.get(url, proxies)
+        response = requests.get(url, proxies=proxies)
         xml_data = response.content.decode("utf-8")
         item_tags = xml_data.split("<item>")[1:]
         khabar = ""
@@ -156,7 +156,7 @@ async def callback(event):
     max_length = 30
     try:
         url = "https://www.farsnews.ir/rss/culture/topnews"
-        response = requests.get(url, proxies)
+        response = requests.get(url, proxies=proxies)
         xml_data = response.content.decode("utf-8")
         item_tags = xml_data.split("<item>")[1:]
         khabar = ""

@@ -12,8 +12,8 @@ HOME = json.loads(os.getenv("HOME"))
 DATABASE_NAME = os.getenv("DATABASE_NAME")
 
 proxies = {
-    "http": "http://127.0.0.1:1071",
-    "https": "socks5://127.0.0.1:1070",
+    "http":"http://127.0.0.1:1071",
+    "https":"http://127.0.0.1:1071",
 }
 
 client = TelegramClient("Gholmoram", API_ID, API_HASH)

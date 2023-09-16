@@ -3,6 +3,8 @@ from bot import client
 from telethon.sync import events, types
 from data.database import update_cache, USER_DATA_CACHE
 from telethon.tl.functions.users import GetFullUserRequest
+from data.chats_data import update_chat_cache, CHAT_DATA_CACHE
+from telethon.tl.functions.channels import GetFullChannelRequest
 
 
 @client.on(events.ChatAction)
@@ -46,7 +48,34 @@ async def handler(event):
                     existing_user_data["access_hash"] = user.access_hash
                     existing_user_data["bio"] = full.full_user.about
                     existing_user_data["is_bot"] = user.bot
-                print("Done")
+
+            print("start of chat data collection...")
+            # Get chat details
+            chat = await client.get_entity(event.chat_id)
+            full_chat = await client(GetFullChannelRequest(chat.id))
+            chat_data = {
+                "chat_id": chat.id,
+                "access_hash": chat.access_hash,
+                "title": chat.title,
+                # "type": chat.type,
+                "members_count": full_chat.full_chat.participants_count,
+                "last_interaction": datetime.datetime.now(),
+                "description": full_chat.full_chat.about,
+                "link": full_chat.full_chat.exported_invite.link
+                if full_chat.full_chat.exported_invite
+                else None,
+            }
+            # Check if the chat already exists in the cache
+            if chat.id not in CHAT_DATA_CACHE:
+                CHAT_DATA_CACHE[chat.id] = chat_data
+            else:
+                # If the chat already exists, update other chat data fields
+                existing_chat_data = CHAT_DATA_CACHE[chat.id]
+                existing_chat_data.update(chat_data)
+
+            await update_chat_cache(chat_data)
+
+            print("Done")
 
         except Exception as e:
             print(f"Skipping chat due to ChannelPrivateError\n" + str(e))

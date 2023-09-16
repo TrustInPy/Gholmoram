@@ -1,5 +1,6 @@
 from . import about
 from . import admin
+from . import epic_games
 from . import hafez
 from . import hekmat
 from . import members

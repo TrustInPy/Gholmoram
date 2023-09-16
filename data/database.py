@@ -90,6 +90,26 @@ async def create_messages_table(connection):
         print(f"Error creating table: {e}")
 
 
+async def create_admins_table(connection):
+    try:
+        cursor = await connection.cursor()
+        await cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS admins (
+                user_id INTEGER,
+                access_hash INTEGER,
+                date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id),
+                FOREIGN KEY (user_id) REFERENCES users(user_id)
+            )
+            """
+        )
+        await connection.commit()
+        print("Admins table created.")
+    except aiosqlite.Error as e:
+        print(f"Error creating table: {e}")
+
+
 async def load_user_data(connection):
     cursor = await connection.cursor()
     await cursor.execute("SELECT * FROM users")
@@ -178,6 +198,7 @@ async def run_database():
     await create_users_table(conn)
     await create_chats_table(conn)
     await create_messages_table(conn)
+    await create_admins_table(conn)
     await load_user_data(conn)
     await load_chat_data(conn)
     await conn.close()

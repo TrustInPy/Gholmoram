@@ -1,5 +1,4 @@
 import event
-import asyncio
 import features
 from bot import client
 from task import starter

@@ -24,10 +24,14 @@ async def handler(event):
             end_date = datetime.strptime(game[2], "%Y-%m-%d %H:%M:%S")
             game_link = game[3]
 
-            end_date_str = end_date.strftime("%Y-%m-%dT%H:%M")
+            end_date_str = end_date.strftime("%Y-%m-%d %H:%M")
 
             message = (
-                f"{game_name} is free until {end_date_str}. Get it here: {game_link}"
+                f"💎 **{game_name}** is free\n"
+                f"⏳ until **{end_date_str}**\n"
+                f"----------------------------------------\n"
+                f"👇🏻Get it here: {game_link}\n"
+                f"----------------------------------------\n"
             )
             await client.send_message(event.chat_id, message)
 

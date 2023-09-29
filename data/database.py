@@ -2,7 +2,6 @@ import aiosqlite
 import asyncio
 from bot import DATABASE_NAME
 from data.chats_data import load_chat_data
-from .epic_game_data import load_free_games_links
 
 USER_DATA_CACHE = {}  # Dictionary to store user data
 
@@ -53,8 +52,7 @@ async def create_chats_table(connection):
                 type TEXT,
                 members_count INTEGER,
                 last_interaction TIMESTAMP,
-                description TEXT,
-                link TEXT
+                description TEXT
             )
         """
         )
@@ -117,8 +115,9 @@ async def create_epic_game_table(connection):
         await cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS free_games (
-                name TEXT NOT NULL PRIMARY KEY,
-                end_date TEXT NOT NULL,
+                id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                end_date DATETIME NOT NULL,
                 url TEXT NOT NULL
             );
 
@@ -222,7 +221,6 @@ async def run_database():
     await create_epic_game_table(conn)
     await load_user_data(conn)
     await load_chat_data(conn)
-    await load_free_games_links(conn)
     await conn.close()
 
 

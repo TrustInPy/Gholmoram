@@ -9,6 +9,12 @@ from telethon.tl.functions.channels import GetFullChannelRequest
 
 @client.on(events.ChatAction)
 async def handler(event):
+    me = await client.get_me()
+    BOT_ID = me.id
+    # Check if the bot is the user that joined
+    if event.user_id == BOT_ID:
+        return
+
     # Check if the event is about users joining or leaving the group
     if event.action_message is not None and isinstance(
         event.action_message.action,

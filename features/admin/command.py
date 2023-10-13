@@ -4,9 +4,11 @@ import aiosqlite
 from bot import client, ADMIN_ID, DATABASE_NAME
 from telethon.sync import events, types, Button
 from data.admin_data import add_admin, delete_admin
+from data.epic_game_data import toggle_epic_notification
 
 setting_keyboard = [
     [Button.inline("🎖 مدیریت ادمین‌ها", "admin")],
+    [Button.inline("🎮 فعالسازی اعلان Epic", "epic")],
 ]
 setting_title = "👑 تنظیمات بات"
 
@@ -26,9 +28,25 @@ async def handler(event):
         await client.delete_messages(event.chat_id, sent_message)
 
 
+@client.on(events.CallbackQuery(pattern="Home"))
+async def handler(event):
+    user = event._sender_id
+    if user == ADMIN_ID:
+        await client.edit_message(
+            event.chat_id, event.message_id, setting_title, buttons=setting_keyboard
+        )
+    else:
+        sent_message = await client.send_message(
+            event.chat_id, "⛔️ متاسفانه شما دسترسی لازم را ندارید ⛔️"
+        )
+        await asyncio.sleep(5)
+        await client.delete_messages(event.chat_id, sent_message)
+
+
 adminstrator_menu_keyboard = [
     [Button.inline("📝 لیست ادمین‌‌ها", "admins")],
     [Button.inline("➕ افزودن ادمین", "add_admin")],
+    [Button.inline("بازگشت", "Home")],
 ]
 adminstrator_menu_title = "🎖 تنظیمات ادمین‌ها"
 
@@ -112,15 +130,15 @@ async def callback(event):
         await cursor.execute("SELECT * FROM admins")
         admins = await cursor.fetchall()
         await connection.close()
-        global buttons
-        buttons = []
+        global admins_buttons
+        admins_buttons = []
         if admins:
             await event.answer("ادمین‌ها")
             for admin in admins:
                 user_id, access_hash, date_added = admin
                 user = await client.get_entity(types.PeerUser(user_id))
                 if user.username:
-                    buttons.append(
+                    admins_buttons.append(
                         [
                             Button.inline(
                                 f"@{user.username}", data=f"user:{user.username}"
@@ -128,15 +146,15 @@ async def callback(event):
                         ]
                     )
                 else:
-                    buttons.append(
+                    admins_buttons.append(
                         [Button.inline(f"ID : {user_id}", data=f"user:{user_id}")]
                     )
-            buttons.append([Button.inline("بازگشت", data="admin")])
+            admins_buttons.append([Button.inline("بازگشت", data="admin")])
             await client.edit_message(
                 event.chat_id,
                 event.message_id,
                 adminstrator_menu_title,
-                buttons=buttons,
+                buttons=admins_buttons,
             )
         else:
             await event.answer("ادمین وجود ندارد")
@@ -166,7 +184,9 @@ async def handler(event):
         )
     else:
         await event.answer("You do not have permission")
-        await client.edit_message(event.chat_id, event._message_id, buttons=buttons)
+        await client.edit_message(
+            event.chat_id, event._message_id, buttons=admins_buttons
+        )
 
 
 @client.on(events.CallbackQuery(pattern=r"^delete:(.*)$"))
@@ -184,3 +204,71 @@ async def handler(event):
         )
     else:
         await event.answer("You do not have permission to delete an admin")
+
+
+### EPIC Notifications
+
+epic_notification_menu_keyboard = [
+    [Button.inline("💬 گروه‌ها", "chats")],
+    [Button.inline("بازگشت", "Home")],
+]
+epic_notification_menu_title = "🎮 تنظیمات اعلان های Epic"
+
+
+@client.on(events.CallbackQuery(pattern=r"^epic$"))
+async def callback(event):
+    user = event._sender_id
+    if user == ADMIN_ID:
+        await client.edit_message(
+            event.chat_id,
+            event._message_id,
+            epic_notification_menu_title,
+            buttons=epic_notification_menu_keyboard,
+        )
+    else:
+        await event.answer("You do not have permission")
+
+
+@client.on(events.CallbackQuery(pattern=r"^chats$"))
+async def callback(event):
+    user = event._sender_id
+    if user == ADMIN_ID:
+        connection = await aiosqlite.connect(DATABASE_NAME)
+        cursor = await connection.cursor()
+        await cursor.execute("SELECT * FROM chats")
+        chats = await cursor.fetchall()
+        await connection.close()
+        global chats_buttons
+        chats_buttons = []
+        if chats:
+            await event.answer("گروه‌ها")
+            for chat in chats:
+                chat_name = chat[2]
+                chat_id = chat[0]
+                chats_buttons.append(
+                    [
+                        Button.inline(
+                            f"Chat : {chat_name} - {chat[8]}", data=f"chat:{chat_id}"
+                        )
+                    ]
+                )
+            chats_buttons.append([Button.inline("بازگشت", data="epic")])
+            await client.edit_message(
+                event.chat_id,
+                event.message_id,
+                epic_notification_menu_title,
+                buttons=chats_buttons,
+            )
+        else:
+            await event.answer("گروهی وجود ندارد")
+    else:
+        await event.answer("You do not have permission")
+
+
+@client.on(events.CallbackQuery(pattern=r"^chat:"))
+async def on_chat_button(event):
+    chat_id = event.data.decode().split(":")[1]
+
+    await toggle_epic_notification(chat_id)
+
+    await callback(event)

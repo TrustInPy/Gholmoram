@@ -1,9 +1,10 @@
 import datetime
-from bot import client
+import aiosqlite
+from bot import client, DATABASE_NAME
 from telethon.sync import events, types
+from data.chats_data import update_chat_cache
 from data.database import update_cache, USER_DATA_CACHE
 from telethon.tl.functions.users import GetFullUserRequest
-from data.chats_data import update_chat_cache, CHAT_DATA_CACHE
 from telethon.tl.functions.channels import GetFullChannelRequest
 
 
@@ -71,15 +72,10 @@ async def handler(event):
                 if full_chat.full_chat.exported_invite
                 else None,
             }
-            # Check if the chat already exists in the cache
-            if chat.id not in CHAT_DATA_CACHE:
-                CHAT_DATA_CACHE[chat.id] = chat_data
-            else:
-                # If the chat already exists, update other chat data fields
-                existing_chat_data = CHAT_DATA_CACHE[chat.id]
-                existing_chat_data.update(chat_data)
 
-            await update_chat_cache(chat_data)
+            conn = await aiosqlite.connect(DATABASE_NAME)
+            await update_chat_cache(conn, chat_data)
+            await conn.close()
 
             print("Done")
 

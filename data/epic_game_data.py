@@ -54,7 +54,13 @@ async def get_free_games_links():
                     continue
 
                 game_name = game["title"]
-                game_link = f"https://launcher.store.epicgames.com/en-US/p/{slug}"
+
+                if game["offerType"] == "BUNDLE":
+                    game_link = (
+                        f"https://launcher.store.epicgames.com/en-US/bundles/{slug}"
+                    )
+                else:
+                    game_link = f"https://launcher.store.epicgames.com/en-US/p/{slug}"
 
                 try:
                     conn = await aiosqlite.connect(DATABASE_NAME)

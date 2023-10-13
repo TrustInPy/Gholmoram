@@ -1,7 +1,8 @@
 import asyncio
+import sqlite3
 import aiosqlite
-from data.epic_game_data import get_free_games_links
-from data.chats_data import CHAT_DATA_CACHE, insert_or_update_all_chats
+from bot import client
+from data.epic_game_data import get_free_games_links, send_valid_links_to_chats
 from data.database import DATABASE_NAME, USER_DATA_CACHE, insert_or_update_all_users
 
 
@@ -10,13 +11,18 @@ async def update_database_periodically():
         try:
             conn = await aiosqlite.connect(DATABASE_NAME)
             await insert_or_update_all_users(conn, USER_DATA_CACHE)
-            await insert_or_update_all_chats(conn, CHAT_DATA_CACHE)
+        except sqlite3.OperationalError as e:
+            print(f"Lost connection to the database: {e}")
+            print("Attempting to reconnect...")
+            try:
+                conn = await aiosqlite.connect(DATABASE_NAME)
+                print("Reconnected to the database.")
+            except Exception as e:
+                print(f"Failed to reconnect: {e}")
         except Exception as e:
             print(e)
         finally:
-            if conn is not None:
-                await conn.close()
-        await asyncio.sleep(600)
+            await asyncio.sleep(40)
 
 
 async def tasks():
@@ -24,10 +30,20 @@ async def tasks():
         try:
             await get_free_games_links()
             print("Epic free games updated in database.")
-            await asyncio.sleep(300)
+            await asyncio.sleep(20)
+        except Exception as e:
+            print(e)
+
+
+async def epic_task():
+    while True:
+        try:
+            await send_valid_links_to_chats(client, DATABASE_NAME)
+            print("Free games task done.")
+            await asyncio.sleep(60)
         except Exception as e:
             print(e)
 
 
 async def starter():
-    asyncio.gather(update_database_periodically(), tasks())
+    asyncio.gather(update_database_periodically(), tasks(), epic_task())

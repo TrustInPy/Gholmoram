@@ -1,8 +1,8 @@
 import json
-from datetime import datetime
 import aiosqlite
 import aiohttp
-from bot import DATABASE_NAME
+from bot import client, DATABASE_NAME
+from datetime import datetime
 
 
 async def get_free_games_links():
@@ -98,3 +98,89 @@ async def get_free_games_links():
 
     except:
         print("features/epic_games: Failed to get free games list from Epic Games.")
+
+
+async def send_valid_links_to_chats(client, DATABASE_NAME):
+    try:
+        epic_conn = await aiosqlite.connect(DATABASE_NAME)
+
+        cursor = await epic_conn.cursor()
+        current_date = datetime.now()
+
+        query = f"""
+            SELECT * FROM free_games
+            WHERE end_date >= ?
+            """
+        await cursor.execute(query, (current_date,))
+        free_games = await cursor.fetchall()
+
+        query = f"""
+            SELECT * FROM chats
+            WHERE epic_notification = 1
+            """
+        await cursor.execute(query)
+        chats = await cursor.fetchall()
+
+        for chat in chats:
+            chat_id = chat[0]
+            for game in free_games:
+                game_id = game[0]
+                game_name = game[1]
+                end_date = datetime.strptime(game[2], "%Y-%m-%d %H:%M:%S")
+                game_link = game[3]
+
+                end_date_str = end_date.strftime("%Y-%m-%d %H:%M")
+
+                message = (
+                    f"💎 **{game_name}** is free\n"
+                    f"⏳ until **{end_date_str}**\n"
+                    f"----------------------------------------\n"
+                    f"👇🏻Get it here: {game_link}\n"
+                    f"----------------------------------------\n"
+                )
+
+                result = await cursor.execute(
+                    """
+                    SELECT * FROM url_chat WHERE chat_id = ? AND game_id = ?
+                    """,
+                    (chat_id, game_id),
+                )
+                data = await result.fetchone()
+                if data is None:
+                    await client.send_message(chat_id, message)
+                    await cursor.execute(
+                        """
+                        INSERT INTO url_chat (chat_id, game_id) VALUES (?, ?)
+                        """,
+                        (chat_id, game_id),
+                    )
+                    await epic_conn.commit()
+
+        await epic_conn.close()
+    except Exception as e:
+        print("Failed to get free games from database.\n" + str(e))
+
+
+async def toggle_epic_notification(chat_id):
+    conn = await aiosqlite.connect(DATABASE_NAME)
+    cursor = await conn.cursor()
+
+    await cursor.execute(
+        "SELECT epic_notification FROM chats WHERE chat_id = ?", (chat_id,)
+    )
+    result = await cursor.fetchone()
+    current_value = result[0] if result else None
+
+    if current_value == 1:
+        new_value = 0
+    else:
+        new_value = 1
+
+    await cursor.execute(
+        "UPDATE chats SET epic_notification = ? WHERE chat_id = ?", (new_value, chat_id)
+    )
+    await conn.commit()
+    if new_value == 1:
+        await send_valid_links_to_chats(client, DATABASE_NAME)
+
+    await conn.close()

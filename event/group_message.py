@@ -1,8 +1,8 @@
 import datetime
 from bot import client
 from telethon.sync import events
-from telethon.tl.functions.users import GetFullUserRequest
 from data.database import update_cache, USER_DATA_CACHE
+from telethon.tl.functions.users import GetFullUserRequest
 
 
 @client.on(events.NewMessage(func=lambda e: e.is_group))

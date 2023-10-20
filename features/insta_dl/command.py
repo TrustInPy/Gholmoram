@@ -11,9 +11,14 @@ async def insta_login():
     global cli
     cli = cl()
     try:
+        cli.load_settings("InstaSession.json")
         cli.login(INSTA_USERNAME, INSTA_PASSWORD)
+        cli.get_timeline_feed()
     except Exception as e:
         print(e)
+        cli = cl()
+        cli.login(INSTA_USERNAME, INSTA_PASSWORD)
+        cli.dump_settings("InstaSession.json")
 
 
 @client.on(events.NewMessage(pattern="(?i)/instadl"))
@@ -30,7 +35,13 @@ async def callback(event):
             # Send a message to the user
             sent_message = await conv.send_message("🔻 لطفا لینک مورد نظر را وارد کنید:")
             # Get the next message from the user
-            response = await conv.get_response()
+            try:
+                response = await conv.get_response(timeout=10)
+            except Exception as e:
+                await client.edit_message(sent_message, "من خسته شدم 😮‍💨")
+                return
+                # await client.send_message(event.chat_id, "من خسته شدم 😮‍💨")
+
             if response.sender_id == downloader_use:
                 url = response.raw_text
                 # Check if the message is in the correct format

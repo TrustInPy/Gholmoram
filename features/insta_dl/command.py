@@ -120,38 +120,15 @@ async def download_instagram_media(event, url, status_message):
                 )
                 await client.send_file(event.chat_id, path)
                 os.remove(path)
-        elif media.media_type == 2 and media.product_type == "feed":
-            # Video
+
+        elif media.media_type == 2:
             path = cli.video_download(media.pk)
             await client.edit_message(
                 status_message, "در حال ارسال\n-------------------------"
             )
             await client.send_file(event.chat_id, path)
             os.remove(path)
-        elif media.media_type == 2 and media.product_type == "igtv":
-            # IGTV
-            path = cli.video_download(media.pk)
-            await client.edit_message(
-                status_message, "در حال ارسال\n-------------------------"
-            )
-            await client.send_file(event.chat_id, path)
-            os.remove(path)
-        elif media.media_type == 2 and media.product_type == "clips":
-            # Reels
-            path = cli.video_download(media.pk)
-            await client.edit_message(
-                status_message, "در حال ارسال\n-------------------------"
-            )
-            await client.send_file(event.chat_id, path)
-            os.remove(path)
-        elif media.media_type == 2 and media.product_type == "story":
-            # story
-            path = cli.video_download(media.pk)
-            await client.edit_message(
-                status_message, "در حال ارسال\n-------------------------"
-            )
-            await client.send_file(event.chat_id, path)
-            os.remove(path)
+
         elif media.media_type == 8:
             # Album
             files = []

@@ -22,7 +22,7 @@ async def update_database_periodically():
         except Exception as e:
             print(e)
         finally:
-            await asyncio.sleep(40)
+            await asyncio.sleep(600)
 
 
 async def tasks():
@@ -30,9 +30,10 @@ async def tasks():
         try:
             await get_free_games_links()
             print("Epic free games updated in database.")
-            await asyncio.sleep(20)
         except Exception as e:
             print(e)
+
+        await asyncio.sleep(600)
 
 
 async def epic_task():
@@ -40,9 +41,10 @@ async def epic_task():
         try:
             await send_valid_links_to_chats(client, DATABASE_NAME)
             print("Free games task done.")
-            await asyncio.sleep(60)
         except Exception as e:
             print(e)
+
+        await asyncio.sleep(600)
 
 
 async def starter():

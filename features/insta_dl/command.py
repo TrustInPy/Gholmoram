@@ -60,24 +60,6 @@ async def callback(event):
                     await conv.send_message(f"آدرس نامعتبر")
                     return
 
-            if response.sender_id == downloader_use:
-                url = response.raw_text
-                # Check if the message is in the correct format
-                if re.match(r"^https?://(www\.)?instagram\.com/.+$", url):
-                    try:
-                        status_message = await client.send_message(
-                            event.chat_id, "در حال جستجو\n-------------------------"
-                        )
-                        await download_instagram_media(event, url, status_message)
-                    except Exception as e:
-                        await conv.send_message(f"Error downloading media: {str(e)}")
-                    finally:
-                        await client.delete_messages(event.chat_id, sent_message)
-                        await client.delete_messages(event.chat_id, status_message)
-                else:
-                    await conv.send_message(f"آدرس نامعتبر")
-                    return
-
 
 async def download_instagram_media(event, url, status_message):
     try:

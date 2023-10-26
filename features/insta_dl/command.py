@@ -27,20 +27,38 @@ async def callback(event):
     cursor = await connection.cursor()
     await cursor.execute("SELECT user_id FROM admins")
     result = await cursor.fetchall()
+    await connection.close()
     admins = [row[0] for row in result]
     if event.sender_id in admins:
         downloader_use = event.sender_id
-        # Start a new conversation
         async with client.conversation(event.chat_id) as conv:
-            # Send a message to the user
-            sent_message = await conv.send_message("🔻 لطفا لینک مورد نظر را وارد کنید:")
-            # Get the next message from the user
+            sent_message = await conv.send_message(
+                "🔻 لطفا لینک مورد نظر را وارد کنید:\n (نسخه بتا)"
+            )
             try:
                 response = await conv.get_response(timeout=10)
             except Exception as e:
-                await client.edit_message(sent_message, "من خسته شدم 😮‍💨")
+                await client.edit_message(
+                    sent_message, "خسته شدم هر وقت لینک پیدا کردی بیا 😮‍💨"
+                )
                 return
-                # await client.send_message(event.chat_id, "من خسته شدم 😮‍💨")
+
+            if response.sender_id == downloader_use:
+                url = response.raw_text
+                if re.match(r"^https?://(www\.)?instagram\.com/.+$", url):
+                    try:
+                        status_message = await client.send_message(
+                            event.chat_id, "در حال جستجو\n-------------------------"
+                        )
+                        await download_instagram_media(event, url, status_message)
+                    except Exception as e:
+                        await conv.send_message(f"Error downloading media: {str(e)}")
+                    finally:
+                        await client.delete_messages(event.chat_id, sent_message)
+                        await client.delete_messages(event.chat_id, status_message)
+                else:
+                    await conv.send_message(f"آدرس نامعتبر")
+                    return
 
             if response.sender_id == downloader_use:
                 url = response.raw_text
@@ -83,6 +101,7 @@ async def download_instagram_media(event, url, status_message):
         await client.edit_message(
             status_message, "شروع دانلود\n-------------------------"
         )
+
         if media.media_type == 1:
             # Photo
             path = cli.photo_download(media.pk)
@@ -120,38 +139,15 @@ async def download_instagram_media(event, url, status_message):
                 )
                 await client.send_file(event.chat_id, path)
                 os.remove(path)
-        elif media.media_type == 2 and media.product_type == "feed":
-            # Video
+
+        elif media.media_type == 2:
             path = cli.video_download(media.pk)
             await client.edit_message(
                 status_message, "در حال ارسال\n-------------------------"
             )
             await client.send_file(event.chat_id, path)
             os.remove(path)
-        elif media.media_type == 2 and media.product_type == "igtv":
-            # IGTV
-            path = cli.video_download(media.pk)
-            await client.edit_message(
-                status_message, "در حال ارسال\n-------------------------"
-            )
-            await client.send_file(event.chat_id, path)
-            os.remove(path)
-        elif media.media_type == 2 and media.product_type == "clips":
-            # Reels
-            path = cli.video_download(media.pk)
-            await client.edit_message(
-                status_message, "در حال ارسال\n-------------------------"
-            )
-            await client.send_file(event.chat_id, path)
-            os.remove(path)
-        elif media.media_type == 2 and media.product_type == "story":
-            # story
-            path = cli.video_download(media.pk)
-            await client.edit_message(
-                status_message, "در حال ارسال\n-------------------------"
-            )
-            await client.send_file(event.chat_id, path)
-            os.remove(path)
+
         elif media.media_type == 8:
             # Album
             files = []

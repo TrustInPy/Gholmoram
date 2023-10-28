@@ -47,6 +47,8 @@ async def add_admin(conv, client, username):
         sent_message = await conv.send_message("Error adding admin")
         await asyncio.sleep(4)
         await client.delete_messages(conv.chat_id, sent_message)
+    finally:
+        await connection.close()
 
 
 async def delete_admin(event, client, user_identifier):
@@ -101,3 +103,5 @@ async def delete_admin(event, client, user_identifier):
         sent_message = await event.respond(f"Error deleting admin")
         await asyncio.sleep(4)
         await client.delete_messages(event.chat_id, sent_message)
+    finally:
+        await connection.close()

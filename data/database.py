@@ -13,6 +13,8 @@ async def create_database(DATABASE_NAME):
     except aiosqlite.Error as e:
         print(f"Error: {e}")
         return None
+    finally:
+        await connection.close()
 
 
 async def create_users_table(connection):

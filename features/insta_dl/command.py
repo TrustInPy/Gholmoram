@@ -95,7 +95,11 @@ async def download_instagram_media(event, url, status_message):
                 jpeg_path = path._str.rsplit(".", 1)[0] + ".jpeg"
                 im.save(jpeg_path, "JPEG")
                 pathjpeg = jpeg_path
-                await client.send_file(event.chat_id, pathjpeg)
+                if media.caption_text:
+                    caption = media.caption_text
+                else:
+                    caption = "----------------------------\n این کپشن"
+                await client.send_file(event.chat_id, pathjpeg, media.caption_text)
                 try:
                     os.remove(path)
                     os.remove(pathjpeg)

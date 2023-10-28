@@ -22,6 +22,7 @@ async def update_database_periodically():
         except Exception as e:
             print(e)
         finally:
+            await conn.close()
             await asyncio.sleep(600)
 
 

@@ -7,6 +7,8 @@ from instagrapi import Client as cl
 from bot import client, DATABASE_NAME, INSTA_USERNAME, INSTA_PASSWORD
 
 
+SIGNATURE = "\n\n----------------------------------------------\n 🔻 @Gholmoram"
+
 async def insta_login():
     global cli
     cli = cl()
@@ -96,10 +98,10 @@ async def download_instagram_media(event, url, status_message):
                 im.save(jpeg_path, "JPEG")
                 pathjpeg = jpeg_path
                 if media.caption_text:
-                    caption = media.caption_text
+                    caption = media.caption_text + SIGNATURE
                 else:
-                    caption = "----------------------------\n این کپشن"
-                await client.send_file(event.chat_id, pathjpeg, media.caption_text)
+                    caption = SIGNATURE
+                await client.send_file(event.chat_id, pathjpeg, caption=caption)
                 try:
                     os.remove(path)
                     os.remove(pathjpeg)
@@ -113,7 +115,11 @@ async def download_instagram_media(event, url, status_message):
                 jpeg_path = path._str.rsplit(".", 1)[0] + ".jpeg"
                 im.save(jpeg_path, "JPEG")
                 pathjpeg = jpeg_path
-                await client.send_file(event.chat_id, pathjpeg)
+                if media.caption_text:
+                    caption = media.caption_text + SIGNATURE
+                else:
+                    caption = SIGNATURE
+                await client.send_file(event.chat_id, pathjpeg, caption=caption)
                 try:
                     os.remove(path)
                     os.remove(pathjpeg)
@@ -123,7 +129,11 @@ async def download_instagram_media(event, url, status_message):
                 await client.edit_message(
                     status_message, "در حال ارسال\n-------------------------"
                 )
-                await client.send_file(event.chat_id, path)
+                if media.caption_text:
+                    caption = media.caption_text + SIGNATURE
+                else:
+                    caption = SIGNATURE
+                await client.send_file(event.chat_id, path, caption=caption)
                 os.remove(path)
 
         elif media.media_type == 2:
@@ -131,7 +141,11 @@ async def download_instagram_media(event, url, status_message):
             await client.edit_message(
                 status_message, "در حال ارسال\n-------------------------"
             )
-            await client.send_file(event.chat_id, path)
+            if media.caption_text:
+                caption = media.caption_text + SIGNATURE
+            else:
+                caption = SIGNATURE
+            await client.send_file(event.chat_id, path, caption=caption)
             os.remove(path)
 
         elif media.media_type == 8:
@@ -163,7 +177,11 @@ async def download_instagram_media(event, url, status_message):
             await client.edit_message(
                 status_message, "در حال ارسال\n-------------------------"
             )
-            await client.send_file(event.chat_id, files)
+            if media.caption_text:
+                caption = media.caption_text + SIGNATURE
+            else:
+                caption = SIGNATURE
+            await client.send_file(event.chat_id, files, caption=caption)
             for file in files:
                 try:
                     os.remove(file)

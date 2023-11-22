@@ -2,7 +2,7 @@ import os
 import asyncio
 import aiosqlite
 from datetime import datetime
-from bot import DATABASE_NAME, client, HOME
+from bot import DATABASE_NAME, client, HOME_ID
 
 USER_DATA_CACHE = {}  # Dictionary to store user data
 
@@ -240,7 +240,7 @@ async def database_backup():
         now = datetime.now()
         file_path = f"{DATABASE_NAME}"
         if os.path.exists(file_path):
-            await client.send_file(HOME, file_path, caption=now.strftime("%Y-%m-%d %H:%M:%S") + "\n#Backup")
+            await client.send_file(HOME_ID, file_path, caption=now.strftime("%Y-%m-%d %H:%M:%S") + "\n#Backup")
         else:
             print(f"File {file_path} does not exist.")
     except Exception as e:

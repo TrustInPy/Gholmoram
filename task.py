@@ -3,7 +3,7 @@ import sqlite3
 import aiosqlite
 from bot import client
 from data.epic_game_data import get_free_games_links, send_valid_links_to_chats
-from data.database import DATABASE_NAME, USER_DATA_CACHE, insert_or_update_all_users
+from data.database import DATABASE_NAME, USER_DATA_CACHE, insert_or_update_all_users, database_backup
 
 
 async def update_database_periodically():
@@ -48,5 +48,22 @@ async def epic_task():
         await asyncio.sleep(600)
 
 
+async def backup():
+    send_status = False
+    while True:
+        if send_status == False:
+            await asyncio.sleep(20)
+            send_status = True
+        try:
+            await database_backup()
+            print("Database backup sent.")
+        except Exception as e:
+            print(e)
+            send_status = False
+
+        await asyncio.sleep(604800)
+
+
 async def starter():
-    asyncio.gather(update_database_periodically(), tasks(), epic_task())
+    asyncio.gather(update_database_periodically(),
+                   tasks(), epic_task(), backup())

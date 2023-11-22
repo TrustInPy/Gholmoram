@@ -6,6 +6,7 @@ from telethon.sync import TelegramClient
 load_dotenv()
 API_ID = os.getenv("API_ID")
 API_HASH = os.getenv("API_HASH")
+HOME = int(os.getenv("HOME"))
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
 DATABASE_NAME = os.getenv("DATABASE_NAME")

@@ -8,3 +8,4 @@ from . import members
 from . import news
 from . import start
 from . import team
+from . import uploader

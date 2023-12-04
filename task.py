@@ -66,4 +66,4 @@ async def backup():
 
 async def starter():
     asyncio.gather(update_database_periodically(),
-                   tasks(), epic_task(), backup())
+                   tasks(), epic_task())

@@ -1,6 +1,5 @@
 import os
 import json
-import socks
 from dotenv import load_dotenv
 from telethon.sync import TelegramClient
 
@@ -19,5 +18,5 @@ proxies = {
     "https":"http://127.0.0.1:1071",
 }
 
-client = TelegramClient("Gholmoram", API_ID, API_HASH, proxy=("socks5", "127.0.0.1", 10808, True))
+client = TelegramClient("Gholmoram", API_ID, API_HASH)
 client.parse_mode = "md"

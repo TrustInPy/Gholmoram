@@ -9,6 +9,7 @@ from bot import client, DATABASE_NAME, INSTA_USERNAME, INSTA_PASSWORD
 
 SIGNATURE = "\n\n----------------------------------------------\n 🔻 @Gholmoram"
 
+
 async def insta_login():
     global cli
     cli = cl()
@@ -25,6 +26,13 @@ async def insta_login():
 
 @client.on(events.NewMessage(pattern="(?i)/instadl"))
 async def callback(event):
+    await client.send_message(
+        event.chat_id, "توی آپدیت جدید دیگه نیازی به دستور /instadl نیست ✌"
+    )
+
+
+@client.on(events.NewMessage())
+async def callback(event):
     connection = await aiosqlite.connect(DATABASE_NAME)
     cursor = await connection.cursor()
     await cursor.execute("SELECT user_id FROM admins")
@@ -33,34 +41,21 @@ async def callback(event):
     admins = [row[0] for row in result]
     if event.sender_id in admins:
         downloader_use = event.sender_id
-        async with client.conversation(event.chat_id) as conv:
-            sent_message = await conv.send_message(
-                "🔻 لطفا لینک مورد نظر را وارد کنید:\n (نسخه بتا)"
-            )
+        url = event.message.raw_text
+        if re.match(r"^https?://(www\.)?instagram\.com/.+$", url):
             try:
-                response = await conv.get_response(timeout=10)
-            except Exception as e:
-                await client.edit_message(
-                    sent_message, "خسته شدم هر وقت لینک پیدا کردی بیا 😮‍💨"
+                status_message = await client.send_message(
+                    event.chat_id, "در حال جستجو\n-------------------------"
                 )
-                return
-
-            if response.sender_id == downloader_use:
-                url = response.raw_text
-                if re.match(r"^https?://(www\.)?instagram\.com/.+$", url):
-                    try:
-                        status_message = await client.send_message(
-                            event.chat_id, "در حال جستجو\n-------------------------"
-                        )
-                        await download_instagram_media(event, url, status_message)
-                    except Exception as e:
-                        await conv.send_message(f"Error downloading media: {str(e)}")
-                    finally:
-                        await client.delete_messages(event.chat_id, sent_message)
-                        await client.delete_messages(event.chat_id, status_message)
-                else:
-                    await conv.send_message(f"آدرس نامعتبر")
-                    return
+                await download_instagram_media(event, url, status_message)
+            except Exception as e:
+                await client.send_message(
+                    event.chat_id, f"Error downloading media: {str(e)}"
+                )
+            finally:
+                await client.delete_messages(event.chat_id, status_message)
+        else:
+            return
 
 
 async def download_instagram_media(event, url, status_message):

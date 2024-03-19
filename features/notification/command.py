@@ -2,7 +2,7 @@ import aiosqlite
 from telethon.sync import events, Button
 from bot import client, DATABASE_NAME, ADMIN_ID
 
-notification = None
+is_notification = None
 selected_chats = []
 
 
@@ -21,11 +21,11 @@ async def handler(event):
     if event.sender_id == ADMIN_ID:
 
         try:
-            notification = event.message.text.split(" ")
-            if len(notification) < 2:
+            is_notification = event.message.text.split(" ", 1)
+            if len(is_notification) < 2:
                 await client.send_message(event.chat_id, "متن پیام دریافت نشد 💤")
                 return
-
+            notification = is_notification[1]
             selected_chats = []
             buttons = [
                 [Button.inline(chat[1], data=chat[0])]
@@ -54,7 +54,7 @@ async def callback_handler(event):
         if selection == "finish":
 
             for chat in selected_chats:
-                await client.send_message(chat[0], notification[1])
+                await client.send_message(chat[0], notification)
             try:
                 await client.delete_messages(event.chat_id, button_message)
             except Exception as e:

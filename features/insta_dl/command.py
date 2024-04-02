@@ -69,7 +69,7 @@ async def download_instagram_media(event, url, status_message):
         elif "instagram.com/" in url:
             match = re.search(r"instagram\.com/(.+)/(.+)/", url)
             if match:
-                media_code_or_id = match.group(2)
+                media_code_or_id = match.group(2).split("?")[0]
                 if re.match(r"^[A-Za-z0-9_-]+$", media_code_or_id):
                     media_id = cli.media_pk_from_code(media_code_or_id)
                 else:
@@ -93,9 +93,18 @@ async def download_instagram_media(event, url, status_message):
                 im.save(jpeg_path, "JPEG")
                 pathjpeg = jpeg_path
                 if media.caption_text:
-                    caption = media.caption_text + SIGNATURE
+                    caption = (
+                        f"[@{media.user.username}](instagram.com/{media.user.username})"
+                        + "\n\n"
+                        + media.caption_text[:800]
+                        + SIGNATURE
+                    )
                 else:
-                    caption = SIGNATURE
+                    caption = (
+                        f"[@{media.user.username}](instagram.com/{media.user.username})"
+                        + "\n\n"
+                        + SIGNATURE
+                    )
                 await client.send_file(event.chat_id, pathjpeg, caption=caption)
                 try:
                     os.remove(path)
@@ -111,9 +120,18 @@ async def download_instagram_media(event, url, status_message):
                 im.save(jpeg_path, "JPEG")
                 pathjpeg = jpeg_path
                 if media.caption_text:
-                    caption = media.caption_text + SIGNATURE
+                    caption = (
+                        f"[@{media.user.username}](instagram.com/{media.user.username})"
+                        + "\n\n"
+                        + media.caption_text[:800]
+                        + SIGNATURE
+                    )
                 else:
-                    caption = SIGNATURE
+                    caption = (
+                        f"[@{media.user.username}](instagram.com/{media.user.username})"
+                        + "\n\n"
+                        + SIGNATURE
+                    )
                 await client.send_file(event.chat_id, pathjpeg, caption=caption)
                 try:
                     os.remove(path)
@@ -125,9 +143,18 @@ async def download_instagram_media(event, url, status_message):
                     status_message, "در حال ارسال\n-------------------------"
                 )
                 if media.caption_text:
-                    caption = media.caption_text + SIGNATURE
+                    caption = (
+                        f"[@{media.user.username}](instagram.com/{media.user.username})"
+                        + "\n\n"
+                        + media.caption_text[:800]
+                        + SIGNATURE
+                    )
                 else:
-                    caption = SIGNATURE
+                    caption = (
+                        f"[@{media.user.username}](instagram.com/{media.user.username})"
+                        + "\n\n"
+                        + SIGNATURE
+                    )
                 await client.send_file(event.chat_id, path, caption=caption)
                 os.remove(path)
 
@@ -137,9 +164,18 @@ async def download_instagram_media(event, url, status_message):
                 status_message, "در حال ارسال\n-------------------------"
             )
             if media.caption_text:
-                caption = media.caption_text + SIGNATURE
+                caption = (
+                    f"[@{media.user.username}](instagram.com/{media.user.username})"
+                    + "\n\n"
+                    + media.caption_text[:800]
+                    + SIGNATURE
+                )
             else:
-                caption = SIGNATURE
+                caption = (
+                    f"[@{media.user.username}](instagram.com/{media.user.username})"
+                    + "\n\n"
+                    + SIGNATURE
+                )
             await client.send_file(event.chat_id, path, caption=caption)
             os.remove(path)
 
@@ -173,9 +209,18 @@ async def download_instagram_media(event, url, status_message):
                 status_message, "در حال ارسال\n-------------------------"
             )
             if media.caption_text:
-                caption = media.caption_text + SIGNATURE
+                caption = (
+                    f"[@{media.user.username}](instagram.com/{media.user.username})"
+                    + "\n\n"
+                    + media.caption_text[:800]
+                    + SIGNATURE
+                )
             else:
-                caption = SIGNATURE
+                caption = (
+                    f"[@{media.user.username}](instagram.com/{media.user.username})"
+                    + "\n\n"
+                    + SIGNATURE
+                )
             await client.send_file(event.chat_id, files, caption=caption)
             for file in files:
                 try:

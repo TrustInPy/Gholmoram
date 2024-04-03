@@ -5,7 +5,7 @@ from . import hafez
 from . import hekmat
 from . import insta_dl
 from . import members
-# from . import notification
+from . import notification
 from . import news
 from . import start
 from . import team

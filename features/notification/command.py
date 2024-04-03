@@ -28,12 +28,12 @@ async def handler(event):
             notification = is_notification[1]
             selected_chats = []
             buttons = [
-                [Button.inline(chat[1], data=chat[0])]
+                [Button.inline(chat[1], data=f"notification_{chat[0]}")]
                 for chat in chats
                 if chat not in selected_chats
             ]
-            buttons.append([Button.inline("📨 ارسال", data="finish")])
-            buttons.append([Button.inline("❌ حذف همه", data="deselect")])
+            buttons.append([Button.inline("📨 ارسال", data="notification_finish")])
+            buttons.append([Button.inline("❌ حذف همه", data="notification_deselect")])
             button_message = await client.send_message(
                 event.chat_id,
                 "🔅لطفا گروه های مورد نظر را انتخاب کنید: \n\nگروه ها: \n"
@@ -49,10 +49,12 @@ async def callback_handler(event):
     global notification
     global selected_chats
     if event.sender_id == ADMIN_ID:
-
         selection = event.data.decode("utf-8")
-        if selection == "finish":
 
+        if not selection.startswith("notification_"):
+            return
+
+        if selection == "notification_finish":
             for chat in selected_chats:
                 await client.send_message(chat[0], notification)
             try:
@@ -62,7 +64,7 @@ async def callback_handler(event):
             notification = None
             selected_chats = []
             return
-        elif selection == "deselect":
+        elif selection == "notification_deselect":
             try:
                 await client.delete_messages(event.chat_id, button_message)
             except Exception as e:
@@ -72,7 +74,7 @@ async def callback_handler(event):
             return
         else:
             try:
-                selection = int(selection)
+                selection = int(selection.replace("notification_", ""))
             except ValueError:
                 pass
             try:
@@ -90,12 +92,12 @@ async def callback_handler(event):
             "🔅لطفا گروه های مورد نظر را انتخاب کنید: \n\nگروه ها: \n"
             + "\n".join([chat[1] for chat in selected_chats]),
             buttons=[
-                [Button.inline(chat[1], data=chat[0])]
+                [Button.inline(chat[1], data=f"notification_{chat[0]}")]
                 for chat in chats
                 if chat not in selected_chats
             ]
             + [
-                [Button.inline("📨 ارسال", data="finish")],
-                [Button.inline("❌ حذف همه", data="deselect")],
+                [Button.inline("📨 ارسال", data="notification_finish")],
+                [Button.inline("❌ حذف همه", data="notification_deselect")],
             ],
         )

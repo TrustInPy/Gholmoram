@@ -31,31 +31,24 @@ async def callback(event):
     )
 
 
-@client.on(events.NewMessage())
-async def callback(event):
-    # connection = await aiosqlite.connect(DATABASE_NAME)
-    # cursor = await connection.cursor()
-    # await cursor.execute("SELECT user_id FROM admins")
-    # result = await cursor.fetchall()
-    # await connection.close()
-    # admins = [row[0] for row in result]
-    # if event.sender_id in admins:
-    downloader_use = event.sender_id
-    url = event.message.raw_text
-    if re.match(r"^https?://(www\.)?instagram\.com/.+$", url):
-        try:
-            status_message = await client.send_message(
-                event.chat_id, "در حال جستجو\n-------------------------"
-            )
-            await download_instagram_media(event, url, status_message)
-        except Exception as e:
-            await client.send_message(
-                event.chat_id, f"Error downloading media: {str(e)}"
-            )
-        finally:
-            await client.delete_messages(event.chat_id, status_message)
-    else:
-        return
+# @client.on(events.NewMessage())
+# async def callback(event):
+#     downloader_use = event.sender_id
+#     url = event.message.raw_text
+#     if re.match(r"^https?://(www\.)?instagram\.com/.+$", url):
+#         try:
+#             status_message = await client.send_message(
+#                 event.chat_id, "در حال جستجو\n-------------------------"
+#             )
+#             await download_instagram_media(event, url, status_message)
+#         except Exception as e:
+#             await client.send_message(
+#                 event.chat_id, f"Error downloading media: {str(e)}"
+#             )
+#         finally:
+#             await client.delete_messages(event.chat_id, status_message)
+#     else:
+#         return
 
 
 async def download_instagram_media(event, url, status_message):

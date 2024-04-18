@@ -15,7 +15,7 @@ async def setup_database():
 async def main():
     await setup_database()
     await starter()
-    await insta_login()
+    # await insta_login()
 
     print("--------------------------------------------------------")
     print("Database ready +++")

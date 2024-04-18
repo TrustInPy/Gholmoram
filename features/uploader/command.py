@@ -1,7 +1,6 @@
 import aiohttp
 import os
 import re
-import requests
 import shutil
 import uuid
 from bot import client
@@ -22,7 +21,9 @@ async def callback(event):
     try:
         command_parts = event.message.text.split(" ")
         if len(command_parts) < 2:
-            await event.reply("لینک ندادی که 😩")
+            await event.reply(
+                "لینک ندادی که 😩" + "\n" + "باید بعد از دستور آپلود لینک رو بنویسی"
+            )
             return
 
         url = command_parts[1]
@@ -41,10 +42,10 @@ async def callback(event):
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as r:
                 if not r.headers.get("Content-length"):
-                    await event.reply("لینکت ته نداره که... 😩")
+                    await event.reply("لینکت قابل دانلود برای بات نیست... 😩")
                     return
                 if int(r.headers["Content-length"]) > 2000000000:
-                    await event.reply("حجم فایل شما بیش از 2 گیگابایت است. 🥺")
+                    await event.reply("حجم فایلت بیشتر از 2 گیگابایت هست. 🥺")
                     return
 
                 try:
@@ -66,7 +67,12 @@ async def callback(event):
                         if written_bytes > 2000000000:
                             await event.reply("حجم فایل شما بیش از 2 گیگابایت است. 🥺")
                             return
+            send_message = await client.send_message(chat, "در حال ارسال فایل... 🔰")
             await client.send_file(chat, temp_file_path, reply_to=event.message.id)
+            try:
+                await client.delete_messages(chat, send_message)
+            except:
+                pass
     except Exception as e:
         print("Error in upload: " + str(e))
     finally:

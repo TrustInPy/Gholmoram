@@ -1,9 +1,10 @@
+import time
 import event
 import features
-from bot import client
 from task import starter
 from data.database import run_database
 from features.insta_dl.command import insta_login
+from bot import client, switch_to_proxy, reset_client
 
 
 # Run the database setup asynchronously
@@ -21,11 +22,25 @@ async def main():
     print("Database ready +++")
 
 
-# Start the bot client and other setup
-client.loop.run_until_complete(main())
+proxy_switch = False
 
-client.start()
-print("--------------------------------------------------------")
-print("Bot started... ")
+while True:
+    try:
+        # Start the bot client and other setup
+        client.start()
+        print("\n" + "--------------------------------------------------------")
+        print(f"Bot started in {proxy_switch} proxy mode.")
+        print("--------------------------------------------------------" + "\n")
 
-client.run_until_disconnected()
+        client.loop.run_until_complete(main())
+
+        client.run_until_disconnected()
+
+    except ConnectionError as e:
+        (
+            (switch_to_proxy(), proxy_switch := True)
+            if not proxy_switch
+            else (reset_client(), proxy_switch := False)
+        )
+        time.sleep(10)
+        pass

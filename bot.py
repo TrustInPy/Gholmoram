@@ -14,6 +14,8 @@ ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
 DATABASE_NAME = os.getenv("DATABASE_NAME")
 INSTA_USERNAME = os.getenv("INSTA_USERNAME")
 INSTA_PASSWORD = os.getenv("INSTA_PASSWORD")
+INSTAGRAM_TOKEN = os.getenv("INSTAGRAM_TOKEN")
+TEMP_CHAT = int(os.getenv("TEMP_CHAT"))
 IR_PROXY = os.getenv("IR_PROXY")
 PROXY = os.getenv("PROXY")
 

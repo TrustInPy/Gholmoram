@@ -1,27 +1,25 @@
 import re
-import os
-import aiosqlite
+import json
+import aiohttp
+import requests
 from PIL import Image
-from instagrapi import Client as cl
+from bs4 import BeautifulSoup
 from telethon.sync import events, Button
-from bot import client, DATABASE_NAME, INSTA_USERNAME, INSTA_PASSWORD, HOME_ID
+from bot import client, INSTAGRAM_TOKEN, TEMP_CHAT
 
 
 SIGNATURE = "\n\n----------------------------------------------\n 🔻 @Gholmoram"
 
 
-async def insta_login():
-    global cli
-    cli = cl()
-    try:
-        cli.load_settings("InstaSession.json")
-        cli.login(INSTA_USERNAME, INSTA_PASSWORD)
-        cli.get_timeline_feed()
-    except Exception as e:
-        print(e)
-        cli = cl()
-        cli.login(INSTA_USERNAME, INSTA_PASSWORD)
-        cli.dump_settings("InstaSession.json")
+async def aiohttp_get(url: str):
+    raw_response = None
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status != 200:
+                raise Exception(f"Get response status was {response.status}")
+            raw_response = await response.content.read()
+
+    return raw_response
 
 
 @client.on(events.NewMessage(pattern="(?i)/instadl"))
@@ -31,211 +29,136 @@ async def callback(event):
     )
 
 
-# @client.on(events.NewMessage())
-# async def callback(event):
-#     downloader_use = event.sender_id
-#     url = event.message.raw_text
-#     if re.match(r"^https?://(www\.)?instagram\.com/.+$", url):
-#         try:
-#             status_message = await client.send_message(
-#                 event.chat_id, "در حال جستجو\n-------------------------"
-#             )
-#             await download_instagram_media(event, url, status_message)
-#         except Exception as e:
-#             await client.send_message(
-#                 event.chat_id, f"Error downloading media: {str(e)}"
-#             )
-#         finally:
-#             await client.delete_messages(event.chat_id, status_message)
-#     else:
-#         return
+@client.on(events.NewMessage())
+async def callback(event):
+    user_id = event.sender_id
+    url = event.message.raw_text
+    if re.match(r"^https?://(www\.)?instagram\.com/.+$", url):
+        try:
+            status_message = await client.send_message(
+                event.chat_id, "در حال جستجو\n-------------------------"
+            )
+            await download_instagram_media(event.chat_id, url, user_id)
+        except Exception as e:
+            await client.send_message(
+                event.chat_id, f"Error downloading media: {str(e)}"
+            )
+        finally:
+            await client.delete_messages(event.chat_id, status_message)
+    else:
+        return
 
 
-async def download_instagram_media(event, url, status_message):
+async def get_user_id_from_url(url):
     try:
-        media_id = None
-        if "stories" in url:
-            parts = url.split("?")
-            path = parts[0]
-            path_parts = [part for part in path.split("/") if part]
-            media_id = path_parts[-1]
-        elif "instagram.com/" in url:
-            match = re.search(r"instagram\.com/(.+)/(.+)/", url)
-            if match:
-                media_code_or_id = match.group(2).split("?")[0]
-                if re.match(r"^[A-Za-z0-9_-]+$", media_code_or_id):
-                    media_id = cli.media_pk_from_code(media_code_or_id)
-                else:
-                    media_id = media_code_or_id
-        if not media_id:
-            raise ValueError("Could not extract media ID from URL")
-        media = cli.media_info(media_id)
-        await client.edit_message(
-            status_message, "شروع دانلود\n-------------------------"
-        )
-
-        if media.media_type == 1:
-            # Photo
-            path = cli.photo_download(media.pk)
-            if path.suffix == ".heic":
-                await client.edit_message(
-                    status_message, "در حال ارسال\n-------------------------"
-                )
-                im = Image.open(path)
-                jpeg_path = path._str.rsplit(".", 1)[0] + ".jpeg"
-                im.save(jpeg_path, "JPEG")
-                pathjpeg = jpeg_path
-                if media.caption_text:
-                    caption = (
-                        f"[@{media.user.username}](instagram.com/{media.user.username})"
-                        + "\n\n"
-                        + media.caption_text[:800]
-                        + SIGNATURE
-                    )
-                else:
-                    caption = (
-                        f"[@{media.user.username}](instagram.com/{media.user.username})"
-                        + "\n\n"
-                        + SIGNATURE
-                    )
-                await client.send_file(event.chat_id, pathjpeg, caption=caption)
-                try:
-                    os.remove(path)
-                    os.remove(pathjpeg)
-                except:
-                    pass
-            elif path.suffix == ".webp":
-                await client.edit_message(
-                    status_message, "در حال ارسال\n-------------------------"
-                )
-                im = Image.open(path)
-                jpeg_path = path._str.rsplit(".", 1)[0] + ".jpeg"
-                im.save(jpeg_path, "JPEG")
-                pathjpeg = jpeg_path
-                if media.caption_text:
-                    caption = (
-                        f"[@{media.user.username}](instagram.com/{media.user.username})"
-                        + "\n\n"
-                        + media.caption_text[:800]
-                        + SIGNATURE
-                    )
-                else:
-                    caption = (
-                        f"[@{media.user.username}](instagram.com/{media.user.username})"
-                        + "\n\n"
-                        + SIGNATURE
-                    )
-                await client.send_file(event.chat_id, pathjpeg, caption=caption)
-                try:
-                    os.remove(path)
-                    os.remove(pathjpeg)
-                except:
-                    pass
-            else:
-                await client.edit_message(
-                    status_message, "در حال ارسال\n-------------------------"
-                )
-                if media.caption_text:
-                    caption = (
-                        f"[@{media.user.username}](instagram.com/{media.user.username})"
-                        + "\n\n"
-                        + media.caption_text[:800]
-                        + SIGNATURE
-                    )
-                else:
-                    caption = (
-                        f"[@{media.user.username}](instagram.com/{media.user.username})"
-                        + "\n\n"
-                        + SIGNATURE
-                    )
-                await client.send_file(event.chat_id, path, caption=caption)
-                os.remove(path)
-
-        elif media.media_type == 2:
-            path = cli.video_download(media.pk)
-            await client.edit_message(
-                status_message, "در حال ارسال\n-------------------------"
-            )
-            if media.caption_text:
-                caption = (
-                    f"[@{media.user.username}](instagram.com/{media.user.username})"
-                    + "\n\n"
-                    + media.caption_text[:800]
-                    + SIGNATURE
-                )
-            else:
-                caption = (
-                    f"[@{media.user.username}](instagram.com/{media.user.username})"
-                    + "\n\n"
-                    + SIGNATURE
-                )
-            await client.send_file(event.chat_id, path, caption=caption)
-            os.remove(path)
-
-        elif media.media_type == 8:
-            # Album
-            files = []
-            for path in cli.album_download(media.pk):
-                if path.suffix == ".heic":
-                    im = Image.open(path)
-                    jpeg_path = path._str.rsplit(".", 1)[0] + ".jpeg"
-                    im.save(jpeg_path, "JPEG")
-                    pathjpeg = jpeg_path
-                    files.append(pathjpeg)
-                    try:
-                        os.remove(path)
-                    except:
-                        pass
-                elif path.suffix == ".webp":
-                    im = Image.open(path)
-                    jpeg_path = path._str.rsplit(".", 1)[0] + ".jpeg"
-                    im.save(jpeg_path, "JPEG")
-                    pathjpeg = jpeg_path
-                    files.append(pathjpeg)
-                    try:
-                        os.remove(path)
-                    except:
-                        pass
-                else:
-                    files.append(path._str)
-            await client.edit_message(
-                status_message, "در حال ارسال\n-------------------------"
-            )
-            if media.caption_text:
-                caption = (
-                    f"[@{media.user.username}](instagram.com/{media.user.username})"
-                    + "\n\n"
-                    + media.caption_text[:800]
-                    + SIGNATURE
-                )
-            else:
-                caption = (
-                    f"[@{media.user.username}](instagram.com/{media.user.username})"
-                    + "\n\n"
-                    + SIGNATURE
-                )
-            await client.send_file(event.chat_id, files, caption=caption)
-            for file in files:
-                try:
-                    os.remove(file)
-                except:
-                    pass
+        response = await aiohttp_get(url)
+        html_content = response.decode()
+        match = re.search(r'"profile_id":"(\d+)"', html_content)
+        if match:
+            return match.group(1)
+        return None
     except Exception as e:
-        mention = f"[User {event.sender_id}](tg://user?id={event.sender_id})"
-        selection = (
-            "👤 "
-            + mention
-            + "\n\n"
-            + "Faield to download: \n"
-            + url
-            + "\n"
-            + "with instadl.\n\n"
-            + "#log"
+        print(
+            "INSTAGRAM - Error in getting user id from instagram view source: \n" + str(e)
         )
-        await client.send_message(HOME_ID, selection)
 
-        await client.send_message(
-            event.chat_id,
-            "صفحه مورد نظر Private است یا لینک نامعتبر است.",
-        )
-        print(f"An error occurred instadl: {str(e)}")
+
+async def download_instagram_media(event, url, user_id):
+    try:
+        username = url.split("/")[4]
+        caption_url = "https://www.instagram.com/" + username
+
+        if "instagram.com/p/" in url:
+            api_url = f"https://one-api.ir/instagram/?token={INSTAGRAM_TOKEN}&action=post&link={url}"
+        
+        elif "instagram.com/reel/" in url:
+            api_url = f"https://one-api.ir/instagram/?token={INSTAGRAM_TOKEN}&action=audio&link={url}"
+       
+        elif "instagram.com/stories/" in url:
+            user_id = await get_user_id_from_url(caption_url)
+            api_url = f"https://one-api.ir/instagram/?token={INSTAGRAM_TOKEN}&action=user_stories&id={user_id}"
+            await download_story(event, api_url, user_id, url, caption_url, username)
+
+
+    except Exception as e:
+        print(e)
+
+
+
+async def download_story(event, api_url, user_id, url, caption_url, username):
+    try:
+        response = await aiohttp_get(api_url)
+        data = json.loads(response.decode())
+
+        media_files = []
+        temp_messages = []
+
+        if not data["result"]:
+            await client.send_message(event, "صفحه پرایوت است یا استوری منقضی شده.")
+            return
+
+
+        for media in data["result"]:
+            sent_message = await client.send_file(
+                TEMP_CHAT, media["url"], caption=user_id, force_document=True
+            )
+
+            media_files.append(sent_message.media)
+            temp_messages.append(sent_message)
+
+        temp_group = []
+        for item in media_files:
+            temp_group.append(item)
+            if len(temp_group) == 10:
+                await client.send_file(event, temp_group, caption=f'[{username}]({caption_url})' + "\n" + SIGNATURE)
+                temp_group = []
+        if temp_group:
+            await client.send_file(event, temp_group, caption=f'[{username}]({caption_url})' + "\n" + SIGNATURE)
+
+    except Exception as e:
+        print( "INSTAGRAM - Error in downloading story: " + str(e))
+    finally:
+        if temp_messages:
+            await client.delete_messages(TEMP_CHAT, temp_messages)
+
+
+# {
+#   "status": 200,
+#   "result": {
+#     "medias": [
+#       {
+#         "type": "photo",
+#         "media": "https://scontent-dfw5-1.cdninstagram.com/v/t51.29350-15/440636623_948497286717581_7314725829324356362_n.jpg?stp=dst-jpg_e35_s1080x1080&efg=eyJ2ZW5jb2RlX3RhZyI6ImltYWdlX3VybGdlbi4xNDQweDE0NDAuc2RyLmYyOTM1MCJ9&_nc_ht=scontent-dfw5-1.cdninstagram.com&_nc_cat=105&_nc_ohc=UtMyRLK3XaoQ7kNvgHQqdO2&edm=ANTKIIoBAAAA&ccb=7-5&oh=00_AfB2qXt9F3lwBvqvey5XpLI5nEnWlYqQCyTdf49n2-6a0w&oe=6636E6EB&_nc_sid=cf751b",
+#         "cover": "https://scontent-dfw5-1.cdninstagram.com/v/t51.29350-15/440636623_948497286717581_7314725829324356362_n.jpg?stp=dst-jpg_e35_s1080x1080&_nc_ht=scontent-dfw5-1.cdninstagram.com&_nc_cat=105&_nc_ohc=UtMyRLK3XaoQ7kNvgHQqdO2&edm=ANTKIIoBAAAA&ccb=7-5&oh=00_AfB2qXt9F3lwBvqvey5XpLI5nEnWlYqQCyTdf49n2-6a0w&oe=6636E6EB&_nc_sid=cf751b"
+#       },
+#       {
+#         "type": "photo",
+#         "media": "https://scontent-dfw5-1.cdninstagram.com/v/t51.29350-15/440739970_318819211236621_1373273690967404251_n.jpg?stp=dst-jpg_e35_p1080x1080&efg=eyJ2ZW5jb2RlX3RhZyI6ImltYWdlX3VybGdlbi4xMzM1eDEzMzcuc2RyLmYyOTM1MCJ9&_nc_ht=scontent-dfw5-1.cdninstagram.com&_nc_cat=109&_nc_ohc=11nIqKXvBREQ7kNvgGjd6jM&edm=ANTKIIoBAAAA&ccb=7-5&oh=00_AfAG9AUkWQju5euNSn6P_p4qLxmsOnSS0JFmWpSTZnLziA&oe=6636D829&_nc_sid=cf751b",
+#         "cover": "https://scontent-dfw5-1.cdninstagram.com/v/t51.29350-15/440739970_318819211236621_1373273690967404251_n.jpg?stp=dst-jpg_e35_p1080x1080&_nc_ht=scontent-dfw5-1.cdninstagram.com&_nc_cat=109&_nc_ohc=11nIqKXvBREQ7kNvgGjd6jM&edm=ANTKIIoBAAAA&ccb=7-5&oh=00_AfAG9AUkWQju5euNSn6P_p4qLxmsOnSS0JFmWpSTZnLziA&oe=6636D829&_nc_sid=cf751b"
+#       }
+#     ],
+#     "caption": "تجسيد محمد ضمن ورشة تعلّم تجسيد الأفكار!🤍\n\nأنا فقط أعدت صياغة التجسيد✨",
+#     "owner": {
+#       "id": "51178601533",
+#       "username": "unsarra",
+#       "is_verified": false,
+#       "profile_pic_url": "https://scontent-dfw5-2.cdninstagram.com/v/t51.2885-19/431141125_912542427204351_4454950277207538948_n.jpg?stp=dst-jpg_s150x150&_nc_ht=scontent-dfw5-2.cdninstagram.com&_nc_cat=1&_nc_ohc=qOzRJR4y3_UQ7kNvgFSRAAo&edm=ANTKIIoBAAAA&ccb=7-5&oh=00_AfAm3gfowss51aWcTMhQnWnI3DxV80tK6oF_063ubXBTCw&oe=6636E10E&_nc_sid=cf751b",
+#       "blocked_by_viewer": false,
+#       "restricted_by_viewer": null,
+#       "followed_by_viewer": false,
+#       "full_name": "سارة غانم",
+#       "has_blocked_viewer": false,
+#       "is_embeds_disabled": false,
+#       "is_private": false,
+#       "is_unpublished": false,
+#       "requested_by_viewer": false,
+#       "pass_tiering_recommendation": true,
+#       "edge_owner_to_timeline_media": {
+#         "count": 274
+#       },
+#       "edge_followed_by": {
+#         "count": 128700
+#       }
+#     }
+#   }
+# }

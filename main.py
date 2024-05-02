@@ -3,7 +3,7 @@ import event
 import features
 from task import starter
 from data.database import run_database
-from features.insta_dl.command import insta_login
+# from features.insta_dl.command import insta_login
 from bot import client, switch_to_proxy, reset_client
 
 

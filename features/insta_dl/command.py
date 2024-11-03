@@ -1,6 +1,7 @@
 import re
 import os
 import uuid
+import shutil
 import requests
 from telethon.sync import events
 from bot import client
@@ -87,5 +88,9 @@ async def callback(event):
             print(f"Instagram - Error downloading Instagram media: {str(e)}")
         finally:
             await client.delete_messages(event.chat_id, status_message)
+            try:
+                shutil.rmtree(temp_file_path)
+            except:
+                pass
     else:
         return

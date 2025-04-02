@@ -1,33 +1,19 @@
-import requests
+import aiohttp
+import logging
+import telethon
 from bot import client
-from telethon.sync import events
-from features.start.buttons import keyboard
+from features.hafez import is_active
+
+_logger = logging.getLogger("main")
 
 
-def hafez():
-    try:
-        url = "https://c.ganjoor.net/beyt-xml.php?n=1&a=1&p=2"
-        response = requests.get(url)
-        xml = response.content
-        m1 = xml.split(b"<m1>")[1].split(b"</m1>")[0].decode("utf-8")
-        m2 = xml.split(b"<m2>")[1].split(b"</m2>")[0].decode("utf-8")
-        poet = xml.split(b"<poet>")[1].split(b"</poet>")[0].decode("utf-8")
-        total_poem = xml.split(b"<url>")[1].split(b"</url>")[0].decode("utf-8")
-        up = "🖊️"
-        poem = f"{m1}\n{m2}\n\n{up} [{poet}]({total_poem})"
-        return poem
-
-    except Exception as e:
-        print("*** Can not get Hafez ...")
-        return "‼️ متاسفانه شعر دریافت نشد !\n  دوباره تلاش کنید"
-
-
-@client.on(
-    events.NewMessage(func=lambda e: e.is_group or e.is_private, pattern="(?i)/hafez")
-)
+@client.on(telethon.events.NewMessage(pattern=r"(?i)/hafez$"))
 async def handler(event):
+    if not is_active():
+        return
+
     message_chat_id = event.chat_id
-    text = hafez()
+    text = await hafez()
     try:
         await client.delete_messages(message_chat_id, event._message_id)
         if not event.is_private:
@@ -36,17 +22,25 @@ async def handler(event):
             text = mention + "\n" + text
     except:
         pass
-    await client.send_message(message_chat_id, text, buttons=keyboard)
+    await client.send_message(message_chat_id, text)
 
 
-@client.on(events.CallbackQuery(pattern="Hafez"))
-async def callback(event):
-    message_chat_id = event.chat_id
-    text = hafez()
-    if not event.is_private:
-        first_name = event.sender.first_name
-        mention = f"[@{first_name}](tg://user?id={event.sender_id})"
-        text = mention + "\n" + text
-    await event.answer("یک بیت از حافظ")
-    await client.send_message(message_chat_id, text, buttons=keyboard)
-    await client.edit_message(message_chat_id, event._message_id, buttons=None)
+async def hafez():
+    try:
+        url = "https://c.ganjoor.net/beyt-xml.php?n=1&a=1&p=2"
+        xml = None
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                if resp.status != 200:
+                    raise Exception()
+                xml = await resp.text()
+        m1 = xml.split("<m1>")[1].split("</m1>")[0]
+        m2 = xml.split("<m2>")[1].split("</m2>")[0]
+        poet = xml.split("<poet>")[1].split("</poet>")[0]
+        total_poem = xml.split("<url>")[1].split("</url>")[0]
+        up = "🖊️"
+        poem = f"{m1}\n{m2}\n\n{up} [{poet}]({total_poem})"
+        return poem
+
+    except Exception as e:
+        return "‼️ متاسفانه شعر دریافت نشد !\n  دوباره تلاش کنید"

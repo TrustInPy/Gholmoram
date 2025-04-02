@@ -1,4 +1,4 @@
-_FEATURE_NAME = "hafez"
+_FEATURE_NAME = "id"
 
 import logging
 

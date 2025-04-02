@@ -1,4 +1,4 @@
-_FEATURE_NAME = "hafez"
+_FEATURE_NAME = "inline_query"
 
 import logging
 
@@ -16,13 +16,8 @@ def is_active():
 
 def activate():
     global _active
-    if is_active():
-        return
     _active = True
     _logger.debug(f"features: Feature has been activated: '{_FEATURE_NAME}'")
-
-
-from . import command
 
 
 async def task_runner():

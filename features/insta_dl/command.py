@@ -47,7 +47,7 @@ async def handler(event: telethon.events.NewMessage.Event):
 
         async with aiohttp.ClientSession() as session:
             async with session.get(media_url) as resp:
-                if resp.status != 200:
+                if resp.status < 200 or resp.status >= 300:
                     await event.reply("دریافت رسانه با خطا مواجه شد")
                     return
 

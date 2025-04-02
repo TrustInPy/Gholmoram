@@ -7,7 +7,7 @@ from features.hafez import is_active
 _logger = logging.getLogger("main")
 
 
-@client.on(telethon.events.NewMessage(pattern=r"(?i)/hafez$"))
+@client.on(telethon.events.NewMessage(pattern=r"(?i)/hafez"))
 async def handler(event):
     if not is_active():
         return

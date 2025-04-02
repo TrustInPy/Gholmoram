@@ -4,7 +4,7 @@ from features.about import is_active
 from version import VERSION
 
 
-@client.on(telethon.events.NewMessage(pattern=r"(?i)/about$"))
+@client.on(telethon.events.NewMessage(pattern=r"(?i)/about"))
 async def handle_new_message(event: telethon.events.NewMessage.Event):
     if not is_active():
         return

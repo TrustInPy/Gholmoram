@@ -19,25 +19,22 @@ def _init():
 
     dotenv.load_dotenv()
 
-    _LOG_SAVE_ROOT = os.getenv("LOG_SAVE_ROOT")
-    if _LOG_SAVE_ROOT:
-        if _LOG_SAVE_ROOT.lower() in ["1", "true", "yes", "y"]:
+    if os.getenv("LOG_SAVE_ROOT"):
+        if os.getenv("LOG_SAVE_ROOT").lower() in ["1", "true", "yes", "y"]:
             LOG_SAVE_ROOT = True
-        elif _LOG_SAVE_ROOT.lower() in ["0", "false", "no", "n"]:
+        elif os.getenv("LOG_SAVE_ROOT").lower() in ["0", "false", "no", "n"]:
             LOG_SAVE_ROOT = False
 
-    _LOG_MAIN_TO_CONSOLE = os.getenv("LOG_MAIN_TO_CONSOLE")
-    if _LOG_MAIN_TO_CONSOLE:
-        if _LOG_MAIN_TO_CONSOLE.lower() in ["1", "true", "yes", "y"]:
+    if os.getenv("LOG_MAIN_TO_CONSOLE"):
+        if os.getenv("LOG_MAIN_TO_CONSOLE").lower() in ["1", "true", "yes", "y"]:
             LOG_MAIN_TO_CONSOLE = True
-        elif _LOG_MAIN_TO_CONSOLE.lower() in ["0", "false", "no", "n"]:
+        elif os.getenv("LOG_MAIN_TO_CONSOLE").lower() in ["0", "false", "no", "n"]:
             LOG_MAIN_TO_CONSOLE = False
 
-    _LOG_ROOT_TO_CONSOLE = os.getenv("LOG_ROOT_TO_CONSOLE")
-    if _LOG_ROOT_TO_CONSOLE:
-        if _LOG_ROOT_TO_CONSOLE.lower() in ["1", "true", "yes", "y"]:
+    if os.getenv("LOG_ROOT_TO_CONSOLE"):
+        if os.getenv("LOG_ROOT_TO_CONSOLE").lower() in ["1", "true", "yes", "y"]:
             LOG_ROOT_TO_CONSOLE = True
-        elif _LOG_ROOT_TO_CONSOLE.lower() in ["0", "false", "no", "n"]:
+        elif os.getenv("LOG_ROOT_TO_CONSOLE").lower() in ["0", "false", "no", "n"]:
             LOG_ROOT_TO_CONSOLE = False
 
     LOG_LEVEL = _parse_log_level(os.getenv("LOG_LEVEL"))

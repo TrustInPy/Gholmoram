@@ -1,3 +1,4 @@
+import asyncio
 import envs
 import logsetup
 import logging
@@ -15,8 +16,10 @@ def main():
         try:
             _logger.info("main: Starting bot...")
             client.start(bot_token=BOT_TOKEN)
+            _logger.info("main: Bot connected.")
             client.run_until_disconnected()
-        except ConnectionError:
+        except (ConnectionError, asyncio.exceptions.IncompleteReadError):
+            _logger.info("main: Bot lost connection.")
             cycle_connection_method()
         except KeyboardInterrupt:
             break

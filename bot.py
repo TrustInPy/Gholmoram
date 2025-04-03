@@ -1,13 +1,25 @@
+import json
 import logging
 import re
-from envs import SESSION_NAME, APP_API_ID, APP_API_HASH, PROXY, BACKUP_PROXY
-from telethon.sync import TelegramClient
+from envs import (
+    SESSION_NAME,
+    APP_API_ID,
+    APP_API_HASH,
+    BOT_ALLOW_NO_PROXY,
+    BOT_PROXY_LIST,
+)
+from telethon import TelegramClient
 
 _logger = logging.getLogger("main")
 
-client = TelegramClient(SESSION_NAME, APP_API_ID, APP_API_HASH, connection_retries=2)
+client = TelegramClient(
+    SESSION_NAME, APP_API_ID, APP_API_HASH, connection_retries=0, timeout=5
+)
 
 proxy_regex = r"^(?P<protocol>http|https|socks5)://(?:(?P<username>[^:@]+)(?::(?P<password>[^:@]*))?@)?(?P<host>[\w.-]+|\d{1,3}(?:\.\d{1,3}){3})(?::(?P<port>\d+))?$"
+
+proxy_list = []
+active_proxy_index = None
 
 
 def extract_proxy(proxy_str: str) -> dict:
@@ -37,58 +49,53 @@ def extract_proxy(proxy_str: str) -> dict:
     return proxy_template
 
 
-def set_no_proxy():
-    client._proxy = None
-    _logger.info("bot: Using NO proxy for the client.")
+def cycle_connection_method(first_run: bool = False):
+    global active_proxy_index
+    if first_run:
+        if BOT_ALLOW_NO_PROXY:
+            active_proxy_index = None
+            client._proxy = None
+            _logger.info("bot: Using NO proxy for the client.")
+            return
 
-
-def set_proxy():
-    client._proxy = _proxy_dict
-    _logger.info("bot: Using proxy for the client.")
-
-
-def set_backup_proxy():
-    client._proxy = _backup_proxy_dict
-    _logger.info("bot: Using backup proxy for the client.")
-
-
-def cycle_connection_method():
-    global _state
     _logger.info("bot: Trying to change the connection method...")
 
-    if _state is None:
-        if PROXY:
-            _state = "proxy"
-            set_proxy()
+    if len(proxy_list) == 0:
+        if BOT_ALLOW_NO_PROXY:
+            client._proxy = None
+            _logger.info("bot: There is no proxy to try. Continuing with no proxy...")
+            return
         else:
-            _state = "direct"
-            set_no_proxy()
+            raise Exception("No connection methods to try!")
 
-    elif _state == "direct":
-        if BACKUP_PROXY:
-            _state = "backup_proxy"
-            set_backup_proxy()
+    if active_proxy_index is None:
+        active_proxy_index = 0
+    else:
+        active_proxy_index += 1
+        if active_proxy_index >= len(proxy_list):
+            if BOT_ALLOW_NO_PROXY:
+                active_proxy_index = None
+            else:
+                active_proxy_index = 0
 
-    elif _state == "proxy":
-        if BACKUP_PROXY:
-            _state = "backup_proxy"
-            set_backup_proxy()
-
-    elif _state == "backup_proxy":
-        if PROXY:
-            _state = "proxy"
-            set_proxy()
-        else:
-            _state = "direct"
-            set_no_proxy()
+    if active_proxy_index is None:
+        client._proxy = None
+        _logger.info("bot: Using NO proxy for the client.")
+    else:
+        client._proxy = proxy_list[active_proxy_index]
+        _logger.info(f"bot: Using proxy at index {active_proxy_index} for the client.")
 
 
 def _init():
-    global _state, _proxy_dict, _backup_proxy_dict
-    _state = None
-    _proxy_dict = extract_proxy(PROXY)
-    _backup_proxy_dict = extract_proxy(BACKUP_PROXY)
-    cycle_connection_method()
+    global proxy_list
+    if not BOT_PROXY_LIST:
+        proxy_list = []
+    else:
+        proxy_str_list = json.loads(BOT_PROXY_LIST)
+        for proxy_str in proxy_str_list:
+            proxy_list.append(extract_proxy(proxy_str))
+
+    cycle_connection_method(first_run=True)
 
 
 if "_initialized" not in dir():  # Run once

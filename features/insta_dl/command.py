@@ -5,12 +5,16 @@ import os
 import uuid
 import shutil
 import telethon
+import aiohttp_socks
 from bot import client
+from envs import INSTADL_COBALT_API_URL
 from features.insta_dl import is_active
+from features.proxies import proxy_str_list
+from yarl import URL
 
 _logger = logging.getLogger("main")
 
-SIGNATURE = "\n\n----------------------------------------------\n 🔻 @Gholmoram"
+SIGNATURE = "----------------------------------------------\n 🔻 @Gholmoram"
 
 
 @client.on(telethon.events.NewMessage())
@@ -26,13 +30,14 @@ async def handler(event: telethon.events.NewMessage.Event):
         status_message = await client.send_message(
             event.chat_id, "در حال جستجو\n-------------------------"
         )
-        cobalt_url = "http://127.0.0.1:3400/"
         headers = {"Accept": "application/json", "Content-Type": "application/json"}
-        data = {"url": f"{url}"}
+        data = {"url": url}
 
         response_json = None
         async with aiohttp.ClientSession() as session:
-            async with session.post(cobalt_url, headers=headers, json=data) as resp:
+            async with session.post(
+                INSTADL_COBALT_API_URL, headers=headers, json=data
+            ) as resp:
                 if resp.status != 200:
                     await event.reply("خطا API")
                     return
@@ -45,25 +50,10 @@ async def handler(event: telethon.events.NewMessage.Event):
             await event.reply("خطا در دیتای بازگشتی درخواست")
             return
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(media_url) as resp:
-                if resp.status < 200 or resp.status >= 300:
-                    await event.reply("دریافت رسانه با خطا مواجه شد")
-                    return
-
-                unique_id = str(uuid.uuid4())
-                temp_dir = f"temp/insta_dl/{unique_id}"
-                temp_file_path = f"temp/insta_dl/{unique_id}/{filename}"
-                os.makedirs(temp_dir)
-
-                await client.edit_message(
-                    status_message, "شروع دانلود\n-------------------------"
-                )
-
-                with open(temp_file_path, "wb") as file:
-                    async for chunk in resp.content.iter_chunked(8192):
-                        file.write(chunk)
-
+        await client.edit_message(
+            status_message, "شروع دانلود\n-------------------------"
+        )
+        temp_file_path, temp_dir = await download_and_save(media_url, filename)
         await client.edit_message(status_message, "در حال ارسال فایل... 🔰")
         await client.send_file(
             chat,
@@ -77,7 +67,7 @@ async def handler(event: telethon.events.NewMessage.Event):
             pass
 
     except Exception as e:
-        _logger.error(f"Instagram - Error downloading Instagram media: {str(e)}")
+        _logger.error(f"insta_dl: Error processing Instagram link: {str(e)}")
         await event.reply("خطا API")
     finally:
         await client.delete_messages(event.chat_id, status_message)
@@ -85,3 +75,49 @@ async def handler(event: telethon.events.NewMessage.Event):
             shutil.rmtree(temp_dir)
         except:
             pass
+
+
+async def download_and_save(url: str, filename: str):
+    try:
+        url = URL(url, encoded=True)
+        # Try downloading without a proxy first
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                if resp.status >= 200 and resp.status < 300:
+                    return await save_file(resp, filename)
+
+    except Exception as e:
+        _logger.warning(f"insta_dl: Error downloading file using no proxy")
+        # If download fails, try with each proxy
+        for proxy in proxy_str_list:
+            try:
+                if proxy.startswith("socks5://"):
+                    connector = aiohttp_socks.ProxyConnector.from_url(proxy)
+                    async with aiohttp.ClientSession(connector=connector) as session:
+                        async with session.get(url) as resp:
+                            if resp.status >= 200 and resp.status < 300:
+                                return await save_file(resp, filename)
+                            else:
+                                raise Exception()
+                else:
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(url, proxy=proxy) as resp:
+                            if resp.status >= 200 and resp.status < 300:
+                                return await save_file(resp, filename)
+                            else:
+                                raise Exception()
+            except:
+                continue  # Try the next proxy
+        _logger.error(f"insta_dl: Error downloading file: {str(e)}")
+        return None, None
+
+
+async def save_file(resp, filename):
+    unique_id = str(uuid.uuid4())
+    temp_dir = f"temp/insta_dl/{unique_id}"
+    temp_file_path = f"temp/insta_dl/{unique_id}/{filename}"
+    os.makedirs(temp_dir)
+    with open(temp_file_path, "wb") as file:
+        async for chunk in resp.content.iter_chunked(8192):
+            file.write(chunk)
+    return temp_file_path, temp_dir

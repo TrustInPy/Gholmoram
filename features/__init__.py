@@ -1,19 +1,22 @@
-from . import base
+# Load Proxies
+from . import proxies
+
+
+# Activate features
 from . import about
+from . import base
 from . import hafez
 from . import id
 from . import insta_dl
 
-base.activate()
 about.activate()
+base.activate()
 hafez.activate()
 id.activate()
 insta_dl.activate()
 
 
-###################
-# Scheduled Tasks #
-###################
+# Scheduled Tasks
 import asyncio
 from bot import client
 

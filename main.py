@@ -1,6 +1,6 @@
+import logsetup
 import asyncio
 import envs
-import logsetup
 import logging
 import features
 from bot import client, cycle_connection_method

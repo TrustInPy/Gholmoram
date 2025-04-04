@@ -18,11 +18,15 @@ client = TelegramClient(
 
 proxy_regex = r"^(?P<protocol>http|https|socks5)://(?:(?P<username>[^:@]+)(?::(?P<password>[^:@]*))?@)?(?P<host>[\w.-]+|\d{1,3}(?:\.\d{1,3}){3})(?::(?P<port>\d+))?$"
 
-proxy_list = []
+proxy_dict_list = []
 active_proxy_index = None
 
 
-def extract_proxy(proxy_str: str) -> dict:
+def _validate_proxy(proxy_str: str) -> bool:
+    return re.match(proxy_regex, proxy_str)
+
+
+def _extract_proxy(proxy_str: str) -> dict:
     if not proxy_str:
         return None
 
@@ -60,7 +64,7 @@ def cycle_connection_method(first_run: bool = False):
 
     _logger.info("bot: Trying to change the connection method...")
 
-    if len(proxy_list) == 0:
+    if len(proxy_dict_list) == 0:
         if BOT_ALLOW_NO_PROXY:
             client._proxy = None
             _logger.info("bot: There is no proxy to try. Continuing with no proxy...")
@@ -72,7 +76,7 @@ def cycle_connection_method(first_run: bool = False):
         active_proxy_index = 0
     else:
         active_proxy_index += 1
-        if active_proxy_index >= len(proxy_list):
+        if active_proxy_index >= len(proxy_dict_list):
             if BOT_ALLOW_NO_PROXY:
                 active_proxy_index = None
             else:
@@ -82,18 +86,19 @@ def cycle_connection_method(first_run: bool = False):
         client._proxy = None
         _logger.info("bot: Using NO proxy for the client.")
     else:
-        client._proxy = proxy_list[active_proxy_index]
+        client._proxy = proxy_dict_list[active_proxy_index]
         _logger.info(f"bot: Using proxy at index {active_proxy_index} for the client.")
 
 
 def _init():
-    global proxy_list
+    global proxy_dict_list
     if not BOT_PROXY_LIST:
-        proxy_list = []
+        proxy_dict_list = []
     else:
-        proxy_str_list = json.loads(BOT_PROXY_LIST)
-        for proxy_str in proxy_str_list:
-            proxy_list.append(extract_proxy(proxy_str))
+        proxies = json.loads(BOT_PROXY_LIST)
+        for proxy_str in proxies:
+            if _validate_proxy(proxy_str):
+                proxy_dict_list.append(_extract_proxy(proxy_str))
 
     cycle_connection_method(first_run=True)
 

@@ -10,6 +10,7 @@ async def handle_new_message(event: telethon.events.NewMessage.Event):
 
     message_text = event.message.message.strip()
     response = ""
+    user_was_mentioned = False
     seen_user_ids = {}
 
     if message_text.lower().startswith("/id all"):
@@ -30,6 +31,7 @@ async def handle_new_message(event: telethon.events.NewMessage.Event):
         if mentioned_entities:
             for entity in mentioned_entities:
                 if isinstance(entity, telethon.types.MessageEntityMention):
+                    user_was_mentioned = True
                     username = event.message.raw_text[
                         entity.offset : entity.offset + entity.length
                     ]
@@ -39,6 +41,7 @@ async def handle_new_message(event: telethon.events.NewMessage.Event):
                     seen_user_ids[user.id] = True
                     response += f"{"🤖" if user.bot else "👤"} {user.first_name} -> `{user.id}`\n"
                 elif isinstance(entity, telethon.types.MessageEntityMentionName):
+                    user_was_mentioned = True
                     user = await client.get_entity(entity.user_id)
                     if seen_user_ids.get(user.id):
                         continue
@@ -47,9 +50,10 @@ async def handle_new_message(event: telethon.events.NewMessage.Event):
                         response += f"{"🤖" if user.bot else "👤"} {user.username} -> `{user.id}`\n"
                     else:
                         response += f"{"🤖" if user.bot else "👤"} {user.first_name} -> `{user.id}`\n"
-        else:
+
+        if not user_was_mentioned:
             # Default to sender's ID if no mentions
-            response = f"👤 User ID: `{event.sender_id}`"
+            response = f"👤 User ID: `{event.sender_id}`\n"
 
     response += f"\n💬 Chat ID: `{event.chat_id}`"
 

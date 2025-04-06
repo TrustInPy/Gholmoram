@@ -8,12 +8,14 @@ from . import base
 from . import hafez
 from . import id
 from . import insta_dl
+from . import mention_all
 
 about.activate()
 base.activate()
 hafez.activate()
 id.activate()
 insta_dl.activate()
+mention_all.activate()
 
 
 # Scheduled Tasks

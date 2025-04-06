@@ -20,6 +20,8 @@ async def handler(event: telethon.events.NewMessage.Event):
             continue
         if user.bot:
             continue
+        if user.id == event.sender_id:
+            continue
         if user.username:
             mention_list.append(f"@{user.username}")
         else:

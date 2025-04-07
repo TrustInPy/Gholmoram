@@ -6,7 +6,7 @@ from features.mention_all import is_active
 _logger = logging.getLogger("main")
 
 
-@client.on(telethon.events.NewMessage(pattern=r"(?i).*@all.*"))
+@client.on(telethon.events.NewMessage(pattern=r"(?is).*@all.*"))
 async def handler(event: telethon.events.NewMessage.Event):
     if not is_active():
         return

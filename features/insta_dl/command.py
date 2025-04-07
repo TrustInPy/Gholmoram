@@ -1,3 +1,4 @@
+import aiofiles
 import aiohttp
 import logging
 import re
@@ -8,7 +9,7 @@ import telethon
 import aiohttp_socks
 from bot import client
 from envs import INSTADL_COBALT_API_URL
-from features.insta_dl import is_active
+from features.insta_dl import is_active, temp_dir_path
 from features.proxies import proxy_str_list
 from yarl import URL
 
@@ -114,10 +115,10 @@ async def download_and_save(url: str, filename: str):
 
 async def save_file(resp, filename):
     unique_id = str(uuid.uuid4())
-    temp_dir = f"temp/insta_dl/{unique_id}"
-    temp_file_path = f"temp/insta_dl/{unique_id}/{filename}"
+    temp_dir = f"{temp_dir_path()}/{unique_id}"
+    temp_file_path = f"{temp_dir_path()}/{unique_id}/{filename}"
     os.makedirs(temp_dir)
-    with open(temp_file_path, "wb") as file:
+    async with aiofiles.open(temp_file_path, "wb") as file:
         async for chunk in resp.content.iter_chunked(8192):
-            file.write(chunk)
+            await file.write(chunk)
     return temp_file_path, temp_dir

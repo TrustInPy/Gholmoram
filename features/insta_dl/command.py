@@ -50,10 +50,10 @@ async def handler(event: telethon.events.NewMessage.Event):
                 await event.reply("خطا در دیتای بازگشتی درخواست")
                 return
 
+            files = [{"filename": filename, "url": media_url}]
             await client.edit_message(
                 status_message, "شروع دانلود\n-------------------------"
             )
-            files = [{"filename": filename, "url": media_url}]
             downloaded_files, temp_dir = await download_files(files)
             if downloaded_files:
                 await client.edit_message(status_message, "در حال ارسال فایل... 🔰")
@@ -74,6 +74,9 @@ async def handler(event: telethon.events.NewMessage.Event):
                 filename = str(file_number)
                 files.append({"filename": filename, "url": response_json["audio"]})
 
+            await client.edit_message(
+                status_message, "شروع دانلود\n-------------------------"
+            )
             downloaded_files, temp_dir = await download_files(files)
             downloaded_files = await _fix_files_extensions(downloaded_files)
             album_files, other_files = separate_files_for_sending_as_album(

@@ -53,14 +53,16 @@ async def handler(event: telethon.events.NewMessage.Event):
             await client.edit_message(
                 status_message, "شروع دانلود\n-------------------------"
             )
-            temp_file_path, temp_dir = await download_files(media_url, filename)
-            await client.edit_message(status_message, "در حال ارسال فایل... 🔰")
-            await client.send_file(
-                chat,
-                temp_file_path,
-                caption=SIGNATURE,
-                reply_to=event.message.id,
-            )
+            files = [{"filename": filename, "url": media_url}]
+            downloaded_files, temp_dir = await download_files(files)
+            if downloaded_files:
+                await client.edit_message(status_message, "در حال ارسال فایل... 🔰")
+                await client.send_file(
+                    chat,
+                    downloaded_files[0],
+                    caption=SIGNATURE,
+                    reply_to=event.message.id,
+                )
         elif response_json.get("status") == "picker":
             files = []
             file_number = 0
@@ -77,6 +79,8 @@ async def handler(event: telethon.events.NewMessage.Event):
             album_files, other_files = separate_files_for_sending_as_album(
                 downloaded_files
             )
+            if downloaded_files:
+                await client.edit_message(status_message, "در حال ارسال... 🔰")
             if album_files:
                 await client.send_file(
                     chat,

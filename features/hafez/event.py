@@ -1,4 +1,5 @@
 import aiohttp
+import html
 import logging
 import telethon
 from bot import client
@@ -12,17 +13,9 @@ async def handler(event):
     if not is_active():
         return
 
-    message_chat_id = event.chat_id
     text = await hafez()
-    try:
-        await client.delete_messages(message_chat_id, event._message_id)
-        if not event.is_private:
-            first_name = event.message.sender.first_name
-            mention = f"[@{first_name}](tg://user?id={event.message.sender_id})"
-            text = mention + "\n" + text
-    except:
-        pass
-    await client.send_message(message_chat_id, text)
+    await event.reply(text)
+    _logger.info("features/hafez: Sent a Hafez poem.")
 
 
 async def hafez():
@@ -33,14 +26,15 @@ async def hafez():
             async with session.get(url) as resp:
                 if resp.status != 200:
                     raise Exception()
-                xml = await resp.text()
+                xml = await resp.read()
+
+        xml = html.unescape(xml.decode("utf-8"))
         m1 = xml.split("<m1>")[1].split("</m1>")[0]
         m2 = xml.split("<m2>")[1].split("</m2>")[0]
         poet = xml.split("<poet>")[1].split("</poet>")[0]
-        total_poem = xml.split("<url>")[1].split("</url>")[0]
-        up = "🖊️"
-        poem = f"{m1}\n{m2}\n\n{up} [{poet}]({total_poem})"
-        return poem
+        poem_url = xml.split("<url>")[1].split("</url>")[0]
+        pen_emoji = "🖊️"
+        return f"{m1}\n{m2}\n\n{pen_emoji} [{poet}]({poem_url})"
 
     except Exception as e:
         return "‼️ متاسفانه شعر دریافت نشد !\n  دوباره تلاش کنید"

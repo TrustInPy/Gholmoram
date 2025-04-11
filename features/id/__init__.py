@@ -22,7 +22,7 @@ def activate():
     _logger.debug(f"features: Feature has been activated: '{_FEATURE_NAME}'")
 
 
-from . import command
+from . import event
 
 
 async def task_runner():

@@ -26,7 +26,7 @@ def temp_dir_path():
     return f"temp/{_FEATURE_NAME}"
 
 
-from . import command
+from . import event
 
 
 async def task_runner():

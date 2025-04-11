@@ -12,7 +12,7 @@ from bot import client
 from envs import INSTADL_COBALT_API_URL
 from features.insta_dl import is_active, temp_dir_path
 from features.proxies import proxy_str_list, FEATURE_ALLOW_NO_PROXY
-from hachoir.parser import createParser
+from utilities.hachoir_mime import determine_file_extension
 from yarl import URL
 
 _logger = logging.getLogger("main")
@@ -209,64 +209,12 @@ async def _save_file(resp, filepath):
 async def _fix_files_extensions(files: list[str]):
     new_filepaths = []
     for filepath in files:
-        ext = _determine_file_extension(filepath)
+        ext = await determine_file_extension(filepath)
         if ext:
             new_filepath = f"{filepath}{ext}"
             os.rename(filepath, new_filepath)
             new_filepaths.append(new_filepath)
     return new_filepaths
-
-
-def _determine_file_extension(filepath: str) -> str | None:
-    try:
-        with open(filepath, "rb") as file:
-            parser = createParser(file)
-            if not parser:
-                return None
-            mime_type = parser.mime_type
-    except:
-        return None
-
-    mime_to_extension = {
-        "image/jpeg": ".jpg",
-        "image/png": ".png",
-        "image/gif": ".gif",
-        "image/bmp": ".bmp",
-        "image/tiff": ".tiff",
-        "image/webp": ".webp",
-        "text/plain": ".txt",
-        "text/html": ".html",
-        "text/css": ".css",
-        "text/javascript": ".js",
-        "application/pdf": ".pdf",
-        "application/zip": ".zip",
-        "application/x-tar": ".tar",
-        "application/x-gzip": ".gz",
-        "application/x-rar-compressed": ".rar",
-        "application/vnd.ms-excel": ".xls",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
-        "application/vnd.ms-powerpoint": ".ppt",
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
-        "application/vnd.word": ".doc",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
-        "application/json": ".json",
-        "application/xml": ".xml",
-        "video/mp4": ".mp4",
-        "video/x-msvideo": ".avi",
-        "video/x-matroska": ".mkv",
-        "video/quicktime": ".mov",
-        "video/x-flv": ".flv",
-        "video/x-ms-wmv": ".wmv",
-        "audio/mpeg": ".mp3",
-        "audio/wav": ".wav",
-        "audio/ogg": ".ogg",
-        "audio/x-flac": ".flac",
-        "audio/x-ms-wma": ".wma",
-        "audio/aac": ".aac",
-        "application/octet-stream": ".bin",
-    }
-
-    return mime_to_extension.get(mime_type)
 
 
 def separate_files_for_sending_as_album(files: list[str]):

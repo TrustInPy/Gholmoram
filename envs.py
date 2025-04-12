@@ -10,7 +10,8 @@ def _init():
     global APP_API_ID, APP_API_HASH, BOT_TOKEN, SESSION_NAME, ADMIN_ID
     global BOT_ALLOW_NO_PROXY, BOT_PROXY_LIST
     global FEATURE_ALLOW_NO_PROXY, FEATURE_PROXY_LIST
-    global INSTADL_COBALT_API_URL, MAX_MEM_CACHE_SIZE, MAX_DISK_CACHE_SIZE
+    global INSTADL_COBALT_API_URL
+    global MAX_TEMP_SIZE_MEM, MAX_TEMP_SIZE_DISK
 
     # Default values
     APP_API_ID = None
@@ -23,8 +24,8 @@ def _init():
     FEATURE_ALLOW_NO_PROXY = True
     FEATURE_PROXY_LIST = None
     INSTADL_COBALT_API_URL = None
-    MAX_MEM_CACHE_SIZE = 100 * 2**20  # 100 MiB
-    MAX_DISK_CACHE_SIZE = 2 * 2**30  # 2 GiB
+    MAX_TEMP_SIZE_MEM = 100 * 2**20  # 100 MiB
+    MAX_TEMP_SIZE_DISK = 5 * 2**30  # 5 GiB
 
     dotenv.load_dotenv()
 
@@ -64,8 +65,8 @@ def _init():
     if os.getenv("INSTADL_COBALT_API_URL"):
         INSTADL_COBALT_API_URL = os.getenv("INSTADL_COBALT_API_URL")
 
-    if os.getenv("MAX_MEM_CACHE_SIZE"):
-        size_str = os.getenv("MAX_MEM_CACHE_SIZE")
+    if os.getenv("MAX_TEMP_SIZE_MEM"):
+        size_str = os.getenv("MAX_TEMP_SIZE_MEM")
         match = re.match(r"^(?P<value>\d+(\.\d+)?)(?P<unit>[kKmMgGtTpP]?)$", size_str)
         if not match:
             _logger.error(f"envs: Invalid size format: {size_str}")
@@ -87,10 +88,10 @@ def _init():
         else:
             size = value  # No unit means exact byte amount
 
-        MAX_MEM_CACHE_SIZE = int(size)
+        MAX_TEMP_SIZE_MEM = int(size)
 
-    if os.getenv("MAX_DISK_CACHE_SIZE"):
-        size_str = os.getenv("MAX_DISK_CACHE_SIZE")
+    if os.getenv("MAX_TEMP_SIZE_DISK"):
+        size_str = os.getenv("MAX_TEMP_SIZE_DISK")
         match = re.match(r"^(?P<value>\d+(\.\d+)?)(?P<unit>[kKmMgGtTpP]?)$", size_str)
         if not match:
             _logger.error(f"envs: Invalid size format: {size_str}")
@@ -112,7 +113,7 @@ def _init():
         else:
             size = value  # No unit means exact byte amount
 
-        MAX_DISK_CACHE_SIZE = int(size)
+        MAX_TEMP_SIZE_DISK = int(size)
 
 
 if "_initialized" not in dir():  # Run once

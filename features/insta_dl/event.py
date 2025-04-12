@@ -29,6 +29,8 @@ async def handler(event: telethon.events.NewMessage.Event):
     url = event.message.raw_text
     if not re.match(r"^https?://(www\.)?instagram\.com/.+$", url):
         return
+    
+    _logger.info("insta_dl: Detected an Instagram link.")
     try:
         status_message = await client.send_message(
             event.chat_id, "در حال جستجو\n-------------------------"
@@ -63,6 +65,7 @@ async def handler(event: telethon.events.NewMessage.Event):
                     caption=SIGNATURE,
                     reply_to=event.message.id,
                 )
+                _logger.info("insta_dl: Sent Instagram media.")
         elif response_json.get("status") == "picker":
             files = []
             file_number = 0
@@ -93,6 +96,7 @@ async def handler(event: telethon.events.NewMessage.Event):
                     album=True,
                     force_document=False,
                 )
+                _logger.info("insta_dl: Sent Instagram media. (picker)")
             if other_files:
                 await client.send_file(
                     chat,
@@ -100,6 +104,7 @@ async def handler(event: telethon.events.NewMessage.Event):
                     reply_to=event.message.id,
                     force_document=True,
                 )
+                _logger.info("insta_dl: Sent Instagram media. (picker)")
 
         elif response_json.get("status") == "error":
             error = response_json["error"]["code"]

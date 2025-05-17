@@ -1,7 +1,7 @@
 import logging
 import telethon
+from . import is_active
 from bot import client
-from features.mention_all import is_active
 
 _logger = logging.getLogger("main")
 

@@ -8,9 +8,9 @@ import uuid
 import shutil
 import telethon
 import aiohttp_socks
+from . import is_active, temp_dir_path
 from bot import client
 from envs import INSTADL_COBALT_API_URL
-from features.insta_dl import is_active, temp_dir_path
 from features.proxies import proxy_str_list, FEATURE_ALLOW_NO_PROXY
 from utilities.hachoir_mime import determine_file_extension
 from yarl import URL

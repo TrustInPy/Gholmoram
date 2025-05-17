@@ -1,6 +1,6 @@
 import telethon
+from . import is_active
 from bot import client
-from features.about import is_active
 from version import VERSION
 
 

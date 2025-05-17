@@ -1,6 +1,6 @@
 import telethon
+from . import is_active
 from bot import client
-from features.id import is_active
 
 
 @client.on(telethon.events.NewMessage(pattern=r"(?i)/id"))

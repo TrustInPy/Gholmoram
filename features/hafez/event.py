@@ -2,8 +2,8 @@ import aiohttp
 import html
 import logging
 import telethon
+from . import is_active
 from bot import client
-from features.hafez import is_active
 
 _logger = logging.getLogger("main")
 

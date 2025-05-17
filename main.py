@@ -18,11 +18,15 @@ def main():
             client.start(bot_token=BOT_TOKEN)
             _logger.info("main: Bot connected.")
             client.run_until_disconnected()
-        except (ConnectionError, asyncio.exceptions.IncompleteReadError):
-            _logger.info("main: Bot lost connection.")
-            cycle_connection_method()
         except KeyboardInterrupt:
             break
+        except:
+            _logger.info("main: Bot lost connection.")
+            try:
+                client.disconnect()
+            except:
+                pass
+            cycle_connection_method()
 
 
 if __name__ == "__main__":

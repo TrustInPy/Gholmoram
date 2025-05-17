@@ -58,7 +58,7 @@ def cycle_connection_method(first_run: bool = False):
     if first_run:
         if BOT_ALLOW_NO_PROXY:
             active_proxy_index = None
-            client._proxy = None
+            client.set_proxy(None)
             _logger.info("bot: Using NO proxy for the client.")
             return
 
@@ -66,7 +66,7 @@ def cycle_connection_method(first_run: bool = False):
 
     if len(proxy_dict_list) == 0:
         if BOT_ALLOW_NO_PROXY:
-            client._proxy = None
+            client.set_proxy(None)
             _logger.info("bot: There is no proxy to try. Continuing with no proxy...")
             return
         else:
@@ -83,10 +83,10 @@ def cycle_connection_method(first_run: bool = False):
                 active_proxy_index = 0
 
     if active_proxy_index is None:
-        client._proxy = None
+        client.set_proxy(None)
         _logger.info("bot: Using NO proxy for the client.")
     else:
-        client._proxy = proxy_dict_list[active_proxy_index]
+        client.set_proxy(proxy_dict_list[active_proxy_index])
         _logger.info(f"bot: Using proxy at index {active_proxy_index} for the client.")
 
 

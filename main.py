@@ -3,8 +3,8 @@ import asyncio
 import envs
 import logging
 import features
-from bot import client, cycle_connection_method
-from envs import BOT_TOKEN
+from bot import client, cycle_connection_method, con_fail_meter
+from envs import BOT_TOKEN, EXIT_ON_DISCONNECTION_LOOP
 from features import tasks_init_loop
 
 _logger = logging.getLogger("main")
@@ -21,12 +21,20 @@ def main():
         except KeyboardInterrupt:
             break
         except:
-            _logger.info("main: Bot lost connection.")
+            pass
+        finally:
+            _logger.warning("main: Bot lost connection.")
             try:
                 client.disconnect()
             except:
                 pass
+            if EXIT_ON_DISCONNECTION_LOOP:
+                if con_fail_meter.trigger():
+                    _logger.error("main: Failed connection attempts exceeded the limit")
+                    break
             cycle_connection_method()
+
+    # Execute graceful exit procedure
 
 
 if __name__ == "__main__":

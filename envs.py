@@ -8,7 +8,7 @@ _logger = logging.getLogger("main")
 
 def _init():
     global APP_API_ID, APP_API_HASH, BOT_TOKEN, SESSION_NAME, ADMIN_ID
-    global BOT_ALLOW_NO_PROXY, BOT_PROXY_LIST
+    global BOT_ALLOW_NO_PROXY, BOT_PROXY_LIST, EXIT_ON_DISCONNECTION_LOOP
     global FEATURE_ALLOW_NO_PROXY, FEATURE_PROXY_LIST
     global INSTADL_COBALT_API_URL
     global MAX_TEMP_SIZE_MEM, MAX_TEMP_SIZE_DISK
@@ -21,6 +21,7 @@ def _init():
     ADMIN_ID = None
     BOT_ALLOW_NO_PROXY = True
     BOT_PROXY_LIST = None
+    EXIT_ON_DISCONNECTION_LOOP = False
     FEATURE_ALLOW_NO_PROXY = True
     FEATURE_PROXY_LIST = None
     INSTADL_COBALT_API_URL = None
@@ -52,6 +53,12 @@ def _init():
 
     if os.getenv("BOT_PROXY_LIST"):
         BOT_PROXY_LIST = os.getenv("BOT_PROXY_LIST")
+
+    if os.getenv("EXIT_ON_DISCONNECTION_LOOP"):
+        if os.getenv("EXIT_ON_DISCONNECTION_LOOP").lower() in ["1", "true", "yes", "y"]:
+            EXIT_ON_DISCONNECTION_LOOP = True
+        elif os.getenv("BOT_ALLOW_NO_PROXY").lower() in ["0", "false", "no", "n"]:
+            EXIT_ON_DISCONNECTION_LOOP = False
 
     if os.getenv("FEATURE_ALLOW_NO_PROXY"):
         if os.getenv("FEATURE_ALLOW_NO_PROXY").lower() in ["1", "true", "yes", "y"]:

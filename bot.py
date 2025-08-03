@@ -9,6 +9,7 @@ from envs import (
     BOT_PROXY_LIST,
 )
 from telethon import TelegramClient
+from utilities import failmeter
 
 _logger = logging.getLogger("main")
 
@@ -16,8 +17,8 @@ client = TelegramClient(
     SESSION_NAME, APP_API_ID, APP_API_HASH, connection_retries=0, timeout=5
 )
 
+con_fail_meter = None
 proxy_regex = r"^(?P<protocol>http|https|socks5)://(?:(?P<username>[^:@]+)(?::(?P<password>[^:@]*))?@)?(?P<host>[\w.-]+|\d{1,3}(?:\.\d{1,3}){3})(?::(?P<port>\d+))?$"
-
 proxy_dict_list = []
 active_proxy_index = None
 
@@ -91,7 +92,7 @@ def cycle_connection_method(first_run: bool = False):
 
 
 def _init():
-    global proxy_dict_list
+    global proxy_dict_list, con_fail_meter
     if not BOT_PROXY_LIST:
         proxy_dict_list = []
     else:
@@ -100,6 +101,8 @@ def _init():
             if _validate_proxy(proxy_str):
                 proxy_dict_list.append(_extract_proxy(proxy_str))
 
+    proxy_count = len(proxy_dict_list)
+    con_fail_meter = failmeter.FailMeter(2 + proxy_count, 4 * 60 + proxy_count * 60)
     cycle_connection_method(first_run=True)
 
 

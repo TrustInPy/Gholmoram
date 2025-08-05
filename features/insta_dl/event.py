@@ -29,7 +29,7 @@ async def handler(event: telethon.events.NewMessage.Event):
     url = event.message.raw_text
     if not re.match(r"^https?://(www\.)?instagram\.com/.+$", url):
         return
-    
+
     _logger.info("insta_dl: Detected an Instagram link.")
     try:
         status_message = await client.send_message(
@@ -170,7 +170,8 @@ async def _download(url: str, filepath: str) -> bool:
 
 async def _download_without_proxy(url: str, filepath: str) -> bool:
     try:
-        async with aiohttp.ClientSession() as session:
+        timeout = aiohttp.ClientTimeout(connect=2, sock_connect=2, sock_read=2)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.get(url) as resp:
                 if resp.status >= 200 and resp.status < 300:
                     await _save_file(resp, filepath)
@@ -185,7 +186,10 @@ async def _download_with_proxy(url: str, filepath: str) -> bool:
         try:
             if proxy.startswith("socks5://"):  # socks5 proxy
                 connector = aiohttp_socks.ProxyConnector.from_url(proxy)
-                async with aiohttp.ClientSession(connector=connector) as session:
+                timeout = aiohttp.ClientTimeout(connect=2, sock_connect=2, sock_read=2)
+                async with aiohttp.ClientSession(
+                    connector=connector, timeout=timeout
+                ) as session:
                     async with session.get(url) as resp:
                         if resp.status >= 200 and resp.status < 300:
                             await _save_file(resp, filepath)

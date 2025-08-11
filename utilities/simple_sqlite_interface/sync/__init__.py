@@ -1,42 +1,25 @@
-import aiosqlite
-import asyncio
-
-
-class QueryBundle:
-    """
-    A bundle of query and a list of its respective parameters.
-    One or none parameters means it's a single query but more than one
-    parameter means it needs executemany.
-    """
-
-    def __init__(self, query: str, params: list[tuple] = None):
-        self.query = query
-        self.params = params
+import sqlite3
+import threading
+from .. import QueryBundle
 
 
 class SqliteInterface:
-    """Async version of SqliteInterface"""
+    """Sync version of SqliteInterface"""
 
     def __init__(
         self, data_filepath: str, readonly: bool = False, use_foreign_keys: bool = False
     ):
         self.__readonly = readonly
-        self.__data_filepath = data_filepath
-        self.__use_foreign_keys = use_foreign_keys
-        self.__write_lock = asyncio.Lock()
+        self.__con = sqlite3.Connection(data_filepath, check_same_thread=False)
+        if use_foreign_keys:
+            self.__con.execute("PRAGMA foreign_keys = ON;")
+        self.__cur = self.__con.cursor()
+        self.__write_lock = threading.Lock()
 
-    async def init(self):
-        self.__con = await aiosqlite.connect(
-            self.__data_filepath, check_same_thread=False
-        )
-        if self.__use_foreign_keys:
-            await self.__con.execute("PRAGMA foreign_keys = ON;")
-        self.__cur = await self.__con.cursor()
+    def close(self):
+        self.__con.close()
 
-    async def close(self):
-        await self.__con.close()
-
-    async def execute(
+    def execute(
         self,
         query: str,
         params: tuple = None,
@@ -47,8 +30,8 @@ class SqliteInterface:
     ):
         should_lock = commit or force_consistency
         if should_lock:
-            async with self.__write_lock:
-                return await self.__execute(
+            with self.__write_lock:
+                return self.__execute(
                     query=query,
                     params=params,
                     is_many=False,
@@ -57,7 +40,7 @@ class SqliteInterface:
                     fetchall=fetchall,
                 )
         else:
-            return await self.__execute(
+            return self.__execute(
                 query=query,
                 params=params,
                 is_many=False,
@@ -66,7 +49,7 @@ class SqliteInterface:
                 fetchall=fetchall,
             )
 
-    async def executemany(
+    def executemany(
         self,
         query: str,
         params_list: list[tuple] = [],
@@ -77,8 +60,8 @@ class SqliteInterface:
     ):
         should_lock = commit or force_consistency
         if should_lock:
-            async with self.__write_lock:
-                return await self.__execute(
+            with self.__write_lock:
+                return self.__execute(
                     query=query,
                     params=params_list,
                     is_many=True,
@@ -87,7 +70,7 @@ class SqliteInterface:
                     fetchall=fetchall,
                 )
         else:
-            return await self.__execute(
+            return self.__execute(
                 query=query,
                 params=params_list,
                 is_many=True,
@@ -96,7 +79,7 @@ class SqliteInterface:
                 fetchall=fetchall,
             )
 
-    async def __execute(
+    def __execute(
         self,
         query: str,
         params,
@@ -112,25 +95,25 @@ class SqliteInterface:
             )
         result = None
         if is_many:
-            await self.__cur.executemany(query, params)
+            self.__cur.executemany(query, params)
         else:
-            await self.__cur.execute(query, params)
+            self.__cur.execute(query, params)
         if commit:
-            await self.__con.commit()
+            self.__con.commit()
         if fetchone:
-            result = await self.__cur.fetchone()
+            result = self.__cur.fetchone()
         elif fetchall:
-            result = await self.__cur.fetchall()
+            result = self.__cur.fetchall()
         return result
 
     async def execute_transaction(self, query_bundles: list[QueryBundle]):
-        async with self.__write_lock:
+        with self.__write_lock:
             try:
                 for query_bundle in query_bundles:
                     if query_bundle.params and len(query_bundle.params) > 1:
                         # many
                         params_list: list[tuple] = query_bundle.params
-                        await self.executemany(query_bundle.query, params_list)
+                        self.executemany(query_bundle.query, params_list)
                     else:
                         # single
                         params: tuple | None = (
@@ -138,8 +121,8 @@ class SqliteInterface:
                             if (query_bundle.params and len(query_bundle) > 0)
                             else None
                         )
-                        await self.execute(query_bundle.query, params)
-                await self.__con.commit()
+                        self.execute(query_bundle.query, params)
+                self.__con.commit()
             except:
-                await self.__con.rollback()
+                self.__con.rollback()
                 raise

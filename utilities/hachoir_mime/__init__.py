@@ -5,7 +5,11 @@ from hachoir.parser import createParser
 
 async def determine_mime_type(input) -> str | None:
     """
-    input: 'path' or 'bytes' or 'bytearray' or 'io.BytesIO' of a file
+    Args:
+        input: 'path' or 'bytes' or 'bytearray' or 'io.BytesIO' of a file
+    Returns:
+        str: mime type
+        None: not detected
     """
     if isinstance(input, str):
         try:
@@ -35,7 +39,11 @@ async def determine_mime_type(input) -> str | None:
 
 async def determine_file_extension(input) -> str | None:
     """
-    input: 'path' or 'bytes' or 'bytearray' or 'io.BytesIO' of a file
+    Args:
+        input: 'path' or 'bytes' or 'bytearray' or 'io.BytesIO' of a file
+    Returns:
+        str: file extension e.g. .pdf .jpg
+        None: not detected
     """
     mime_type = await determine_mime_type(input)
     return _mime_to_extension.get(mime_type)

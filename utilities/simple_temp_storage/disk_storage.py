@@ -138,8 +138,8 @@ class DiskStorage:
     def __file_dir(self, key) -> str:
         return f"{self.__root()}/{key[0:2]}"
 
-    def __file_path(self, key) -> str:
-        return f"{self.__file_dir(key)}/{key}"
+    def __file_path(self, key, extension=None) -> str:
+        return f"{self.__file_dir(key)}/{key}{extension if extension else ""}"
 
     async def store(self, input) -> str:
         """
@@ -252,28 +252,26 @@ class DiskStorage:
         if not os.path.exists(self.__root()):
             return
 
-        for item in os.listdir(self.__root()):
-            item_path = os.path.join(self.__root(), item)
-            if not os.path.isdir(item_path):
+        for item in os.scandir(self.__root()):
+            if not os.path.isdir(item.path):
                 # file
                 try:
-                    os.remove(item_path)
+                    os.remove(item.path)
                 except:
                     pass
                 continue
 
             # directory
-            for item2 in os.listdir(item_path):
-                item2_path = os.path.join(item_path, item2)
-                if os.path.isdir(item2_path):
+            for item2 in os.scandir(item.path):
+                if os.path.isdir(item2.path):
                     # directory
                     try:
-                        shutil.rmtree(item2_path)
+                        shutil.rmtree(item2.path)
                     except:
                         pass
                 else:
                     # file
-                    key = item2.split(".")[0]
+                    key = item2.name.split(".")[0]
                     async with self.__pending_files_lock:
                         if self.__pending_files.get(key):
                             continue
@@ -285,7 +283,7 @@ class DiskStorage:
                     count = await self.__db.execute(query, (key,), fetchone=True)
                     if count[0] == 0:
                         try:
-                            os.remove(item2_path)
+                            os.remove(item2.path)
                         except:
                             pass
 
@@ -469,9 +467,7 @@ class DiskStorage:
                     if self.__memory_data_files_retrieved.get(row[0]):
                         continue
                 keys_to_delete.append((row[0],))
-                file_path = self.__file_path(row[0])
-                if row[1]:  # file extension
-                    file_path = f"{file_path}{row[1]}"
+                file_path = self.__file_path(row[0], row[1])
                 try:
                     os.remove(file_path)
                 except:
@@ -574,8 +570,6 @@ class DiskStorage:
         if not key_found:
             return None
 
-        file_path = self.__file_path(key)
-        if file_ext:
-            file_path = f"{file_path}{file_ext}"
+        file_path = self.__file_path(key, file_ext)
 
         return file_path

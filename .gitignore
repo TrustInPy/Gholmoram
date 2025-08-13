@@ -12,3 +12,6 @@ data/
 data-backups/
 logs/
 temp/
+
+start.sh
+start_win.bat

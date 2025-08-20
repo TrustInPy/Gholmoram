@@ -5,12 +5,16 @@ import logging
 import features
 from bot import client, cycle_connection_method, con_fail_meter
 from envs import BOT_TOKEN, EXIT_ON_DISCONNECTION_LOOP
-from features import tasks_init_loop
+from features import activate_features, tasks_init_loop
 
 _logger = logging.getLogger("main")
 
 
 def main():
+    _logger.info("main: Starting main")
+    _logger.info("main: Activating features")
+    client.loop.create_task(activate_features())
+    _logger.info("main: Running features tasks initiator loop")
     client.loop.create_task(tasks_init_loop())
     while True:
         try:

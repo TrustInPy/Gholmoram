@@ -27,7 +27,7 @@ def _validate_proxy(proxy_str: str) -> bool:
     return re.match(proxy_regex, proxy_str)
 
 
-def _extract_proxy(proxy_str: str) -> dict:
+def _extract_proxy(proxy_str: str) -> dict | None:
     if not proxy_str:
         return None
 

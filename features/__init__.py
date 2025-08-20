@@ -1,5 +1,8 @@
 # Load Proxies
 from . import proxies
+from utilities import web_helper
+
+web_helper.set_proxies(proxies.proxy_str_list, proxies.FEATURE_ALLOW_NO_PROXY)
 
 
 # Activate features
@@ -11,13 +14,15 @@ from . import id
 from . import insta_dl
 from . import mention_all
 
-about.activate()
-base.activate()
-hafez.activate()
-hekmat.activate()
-id.activate()
-insta_dl.activate()
-mention_all.activate()
+
+async def activate_features():
+    about.activate()
+    base.activate()
+    hafez.activate()
+    hekmat.activate()
+    id.activate()
+    await insta_dl.activate()
+    mention_all.activate()
 
 
 # Scheduled Tasks
@@ -33,4 +38,4 @@ async def tasks_init_loop():
         client.loop.create_task(hafez.task_runner())
         client.loop.create_task(id.task_runner())
         client.loop.create_task(insta_dl.task_runner())
-        await asyncio.sleep(5)
+        await asyncio.sleep(1)

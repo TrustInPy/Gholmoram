@@ -3,7 +3,7 @@ import heapq
 import sys
 import time
 import uuid
-from . import NotEnoughSpaceError
+from . import StoreResult, StoreResultStatus
 
 
 class MemoryStorage:
@@ -14,16 +14,26 @@ class MemoryStorage:
     """
 
     def __init__(
-        self, max_capacity: int, min_persist_time: int = 60, headroom_percent: int = 10
+        self,
+        max_capacity: int,
+        max_allowed_file_size: int = None,
+        min_persist_time: int = 60,
+        headroom_percent: int = 10,
     ) -> None:
         """
         Args:
             `max_capacity`: Storage size in bytes
+            `max_allowed_file_size`: Largest acceptable file size. None means no limit.
             `min_persist_time`: Minimum span of time which the objects are kept
                                 before getting trimmed
             `headroom_percent`: Percentage of storage size to trim in advance.
         """
         self.__max_capacity = max_capacity
+        if max_capacity < 2**20:
+            self.__max_capacity = 2**20
+        self.max_allowed_file_size: int = max_allowed_file_size
+        if not max_allowed_file_size or max_allowed_file_size > self.__max_capacity:
+            self.max_allowed_file_size = self.__max_capacity
         self.__min_persist_time = min_persist_time
         self.__headroom_percent = headroom_percent
 
@@ -45,20 +55,28 @@ class MemoryStorage:
 
         self.__data_lock = asyncio.Lock()
 
-    async def store(self, value) -> str | None:
+    async def store(self, value) -> StoreResult:
         """
         Args:
             `value`: The object to be stored
         Returns:
             str: Stored object access key
-            None: Failed to store the object
         """
+        store_result = StoreResult()
+
         # Calculate the size of the object in memory
         value_size = sys.getsizeof(value)
+        if value_size > self.max_allowed_file_size:
+            store_result.status = StoreResultStatus.EXCEEDED_MAX_ALLOWED_SIZE
+            return store_result
 
         # Trim storage if needed before adding new item
-        async with self.__data_lock:
-            await self.__trim(value_size)
+        try:
+            async with self.__data_lock:
+                await self.__trim(value_size)
+        except:
+            store_result.status = StoreResultStatus.NOT_ENOUGH_SPACE
+            return store_result
 
         key = str(uuid.uuid4())
 
@@ -81,7 +99,8 @@ class MemoryStorage:
 
             self.__current_size += value_size
 
-        return key
+        store_result.key = key
+        return store_result
 
     async def donewith(self, key: str) -> None:
         async with self.__data_lock:
@@ -106,9 +125,9 @@ class MemoryStorage:
             item["last_used"] = current_time
             item["done_with"] = False
 
-            # Remove from old category and add to new one
-                # We don't physically remove from the old heap as it would be O(n)
-                # Instead, we'll mark it as invalid by updating the metadata
+            # Remove from old category and add to new one:
+            # We don't physically remove from the old heap as it would be O(n)
+            # Instead, we'll mark it as invalid by updating the metadata
 
             # Add to not_expired_not_done category
             heapq.heappush(self.__not_expired_not_done, (current_time, key))
@@ -191,14 +210,18 @@ class MemoryStorage:
         for key in keys_to_update:
             await self.__update_item_category(key)
 
-    async def __trim(self, needed_size: int = 0) -> None:
-        if self.__current_size + needed_size <= self.__max_capacity:
+    async def __trim(self, needed_space: int = 0) -> None:
+        """Make room if needed."""
+        if self.__current_size + needed_space <= self.__max_capacity:
             # There is already enough space
             return
 
+        if needed_space > self.__max_capacity:
+            raise Exception()
+
         headroom = self.__max_capacity / 100 * self.__headroom_percent
         try_to_free = self.__current_size - self.__max_capacity + headroom
-        min_space_to_free = self.__current_size - self.__max_capacity + needed_size
+        min_space_to_free = self.__current_size - self.__max_capacity + needed_space
         freed = 0
 
         # First, update expired status of items
@@ -212,7 +235,7 @@ class MemoryStorage:
         ]:
             while (
                 priority_queue
-                and self.__current_size + needed_size > self.__max_capacity
+                and self.__current_size + needed_space > self.__max_capacity
             ):
                 timestamp, key = heapq.heappop(priority_queue)
 
@@ -250,4 +273,4 @@ class MemoryStorage:
         if freed >= min_space_to_free:
             return
 
-        raise NotEnoughSpaceError(f"needed {needed_size} bytes")
+        raise Exception()

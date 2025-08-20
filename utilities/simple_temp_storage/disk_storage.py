@@ -6,7 +6,7 @@ import os
 import shutil
 import time
 import uuid
-from . import FileTooLargeError, NotEnoughSpaceError, UnsupportedInputError
+from . import StoreResult, StoreResultStatus
 from utilities import hachoir_mime
 from utilities.simple_sqlite_interface import SqliteInterface
 
@@ -45,7 +45,11 @@ class DiskStorage:
         """
         self.__name: str = name
         self.__max_capacity: int = max_capacity
-        self.__max_allowed_file_size: int | None = max_allowed_file_size
+        if max_capacity < 2**20:
+            self.__max_capacity = 2**20
+        self.max_allowed_file_size: int = max_allowed_file_size
+        if not max_allowed_file_size or max_allowed_file_size > self.__max_capacity:
+            self.max_allowed_file_size = self.__max_capacity
         self.__min_persist_time: int = min_persist_time
         self.__headroom_percent: int = headroom_percent
         self.__persist_storage: bool = persist_storage
@@ -141,14 +145,19 @@ class DiskStorage:
     def __file_path(self, key, extension=None) -> str:
         return f"{self.__file_dir(key)}/{key}{extension if extension else ""}"
 
-    async def store(self, input) -> str:
+    async def store(self, input, force_keep: bool = False) -> StoreResult:
         """
         Args:
             `input`: aiohttp.StreamReader, io.BytesIO, bytes or bytearray
+            `force_keep`: Keep the file on the disk whether it's healthy or incomplete.
+                Using this option makes the storage manager to not track the file so
+                deletion of the file should be handled externally.
         Returns:
-            str: Stored object's access key
+            StoreResult: The result object of the store operation
         """
-        await self.__trigger_tasks_backup()
+        await self.__backup_trigger_for_tasks()
+        store_successful = False
+        store_result = StoreResult()
         key = str(uuid.uuid4())
         file_path = self.__file_path(key)
         async with self.__pending_files_lock:
@@ -159,47 +168,85 @@ class DiskStorage:
             # store on disk without extension
             if isinstance(input, aiohttp.StreamReader):
                 async with aiofiles.open(file_path, "wb") as f:
+                    written_size = 0
                     while True:
                         chunk = await input.read(8192)
                         if not chunk:
                             break
                         await f.write(chunk)
+                        written_size += len(chunk)
+                        if written_size > self.max_allowed_file_size:
+                            if force_keep:
+                                store_result.file_path = file_path
+                            store_result.status = (
+                                StoreResultStatus.EXCEEDED_MAX_ALLOWED_SIZE
+                            )
+                            return store_result
+
             elif isinstance(input, io.BytesIO):
                 async with aiofiles.open(file_path, "wb") as f:
+                    written_size = 0
                     input.seek(0)
-                    await f.write(input.read())
-            elif isinstance(input, bytes):
-                async with aiofiles.open(file_path, "wb") as f:
-                    await f.write(input)
-            elif isinstance(input, bytearray):
-                async with aiofiles.open(file_path, "wb") as f:
-                    await f.write(input)
-            else:
-                raise UnsupportedInputError()
+                    while True:
+                        chunk = input.read(8192)
+                        if not chunk:
+                            break
+                        await f.write(chunk)
+                        written_size += len(chunk)
+                        if written_size > self.max_allowed_file_size:
+                            if force_keep:
+                                store_result.file_path = file_path
+                            store_result.status = (
+                                StoreResultStatus.EXCEEDED_MAX_ALLOWED_SIZE
+                            )
+                            return store_result
 
-            # Check file size
+            elif isinstance(input, bytes):
+                if len(input) > self.max_allowed_file_size:
+                    store_result.status = StoreResultStatus.EXCEEDED_MAX_ALLOWED_SIZE
+                    return store_result
+                async with aiofiles.open(file_path, "wb") as f:
+                    await f.write(input)
+
+            elif isinstance(input, bytearray):
+                if len(input) > self.max_allowed_file_size:
+                    store_result.status = StoreResultStatus.EXCEEDED_MAX_ALLOWED_SIZE
+                    return store_result
+                async with aiofiles.open(file_path, "wb") as f:
+                    await f.write(input)
+
+            else:
+                store_result.status = StoreResultStatus.UNSUPPORTED_INPUT
+                return store_result
+
             file_size = os.path.getsize(file_path)
-            if self.__max_allowed_file_size:
-                if file_size > self.__max_allowed_file_size:
-                    raise FileTooLargeError(str(file_size))
 
             # Trim storage if needed before accepting new item
-            async with self.__data_lock:
-                await self.__trim(file_size)
-                self.__current_size += file_size
+            try:
+                async with self.__data_lock:
+                    await self.__trim(file_size)
+                    self.__current_size += file_size
+            except:
+                if force_keep:
+                    store_result.file_path = file_path
+                store_result.status = StoreResultStatus.NOT_ENOUGH_SPACE
+                return store_result
 
             file_ext = await hachoir_mime.determine_file_extension(file_path)
             if file_ext:
                 os.rename(file_path, f"{file_path}{file_ext}")
+
             await self.__store(key, file_ext, file_size)
-            return key
-        except:
-            try:
-                os.remove(file_path)
-            except:
-                pass
-            raise
+            store_result.key = key
+            store_result.file_path = file_path
+            store_successful = True
+            return store_result
         finally:
+            if not store_successful and not force_keep:
+                try:
+                    os.remove(file_path)
+                except:
+                    pass
             try:
                 async with self.__pending_files_lock:
                     del self.__pending_files[key]
@@ -210,14 +257,14 @@ class DiskStorage:
         """
         Call this method when you are done with the temp file.
         """
-        await self.__trigger_tasks_backup()
+        await self.__backup_trigger_for_tasks()
         await self.__donewith(key)
 
     async def retrieve(self, key) -> str | None:
         """
         Retrieve temp file path by providing the key.
         """
-        await self.__trigger_tasks_backup()
+        await self.__backup_trigger_for_tasks()
         return await self.__retrieve(key)
 
     async def purge(self) -> None:
@@ -239,7 +286,7 @@ class DiskStorage:
         """
         Get storage consumed size in bytes.
         """
-        await self.__trigger_tasks_backup()
+        await self.__backup_trigger_for_tasks()
         async with self.__data_lock:
             return self.__current_size
 
@@ -301,7 +348,7 @@ class DiskStorage:
 
         self.__last_tasks_trigger = now
 
-    async def __trigger_tasks_backup(self):
+    async def __backup_trigger_for_tasks(self):
         """
         Backup trigger for running tasks if the main trigger is not called.
         """
@@ -386,18 +433,18 @@ class DiskStorage:
         finally:
             self.__memory_data_files_retrieved = {}
 
-    async def __trim(self, needed_size: int = 0):
+    async def __trim(self, needed_space: int = 0):
         """Make room if needed."""
-        if self.__current_size + needed_size <= self.__max_capacity:
+        if self.__current_size + needed_space <= self.__max_capacity:
             # There is already enough space
             return
 
-        if needed_size > self.__max_capacity:
-            raise NotEnoughSpaceError("This file cannot fit in this temp storage")
+        if needed_space > self.__max_capacity:
+            raise Exception()
 
         headroom = self.__max_capacity / 100 * self.__headroom_percent
         try_to_free = self.__current_size - self.__max_capacity + headroom
-        min_space_to_free = self.__current_size - self.__max_capacity + needed_size
+        min_space_to_free = self.__current_size - self.__max_capacity + needed_space
         freed = 0
         enough = False
         min_allowed_last_used_time = int(time.time()) - self.__min_persist_time
@@ -447,7 +494,7 @@ class DiskStorage:
         if freed >= min_space_to_free:
             return
 
-        raise NotEnoughSpaceError(f"needed {needed_size} bytes")
+        raise Exception()
 
     async def __query_and_trim(self, select_query, try_to_free):
         delete_query = """
